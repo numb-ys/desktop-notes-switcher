@@ -6,7 +6,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.6.1</Version>
+    <Version>0.6.2</Version>
     <Product>Desktop Notes Switcher</Product>
     <NeutralLanguage>en</NeutralLanguage>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
