@@ -68,9 +68,8 @@
   <data name="PinNote" xml:space="preserve"><value>将便笺保持在其他窗口上方</value></data>
   <data name="QuickSwitch" xml:space="preserve"><value>快速切换</value></data>
   <data name="QuickSwitchShow" xml:space="preserve"><value>显示快速切换按钮</value></data>
-  <data name="QuickSwitchDescription" xml:space="preserve"><value>收起时保留圆形切换按钮。</value></data>
+  <data name="QuickSwitchDescription" xml:space="preserve"><value>贴边收起时显示圆钮。</value></data>
   <data name="QuickSwitchTarget" xml:space="preserve"><value>快速切换桌面</value></data>
   <data name="QuickSwitchChoose" xml:space="preserve"><value>选择目标桌面</value></data>
-  <data name="QuickSwitchTooltip" xml:space="preserve"><value>点击切换到桌面 {0}</value></data>
   <data name="NumberedDesktop" xml:space="preserve"><value>桌面 {0}</value></data>
 </root>

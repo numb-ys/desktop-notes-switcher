@@ -68,9 +68,8 @@
   <data name="PinNote" xml:space="preserve"><value>Keep notes above other windows</value></data>
   <data name="QuickSwitch" xml:space="preserve"><value>Quick switch</value></data>
   <data name="QuickSwitchShow" xml:space="preserve"><value>Show the quick switch button</value></data>
-  <data name="QuickSwitchDescription" xml:space="preserve"><value>Keep one desktop a click away.</value></data>
+  <data name="QuickSwitchDescription" xml:space="preserve"><value>Show the button when collapsed.</value></data>
   <data name="QuickSwitchTarget" xml:space="preserve"><value>Quick switch desktop</value></data>
   <data name="QuickSwitchChoose" xml:space="preserve"><value>Choose a desktop</value></data>
-  <data name="QuickSwitchTooltip" xml:space="preserve"><value>Click to switch to desktop {0}</value></data>
   <data name="NumberedDesktop" xml:space="preserve"><value>Desktop {0}</value></data>
 </root>

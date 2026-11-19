@@ -28,7 +28,7 @@ internal sealed class Board : Form
     private Rectangle _railClient;
     private Rectangle _gripLayout;
     private Rectangle _numbersLayout;
-    private Guid _quickDesktop;
+    private (Guid Id, int Number) _quickTarget;
     private long _lastPointerInside;
     private long? _hoverSince;
     private int _revealDelay;
@@ -49,6 +49,7 @@ internal sealed class Board : Form
     public bool IsCollapsed => _collapsed;
     private Rectangle RailBounds => MoveBy(_railClient, Left, Top);
     private bool AutoCollapse => _collapseAtEdge && Snap && _placement.Side != DockSide.None;
+    private bool ShowQuickButton => _quickTarget.Id != Guid.Empty && (_collapsed || _placement.Side == DockSide.None);
 
     public Board(Placement placement, Skin skin, Func<Point, bool> overNote)
     {
@@ -66,8 +67,13 @@ internal sealed class Board : Form
         Controls.Add(_quick);
         _quick.Click += (_, _) =>
         {
-            if (_quickDesktop != Guid.Empty)
-                SwitchRequested?.Invoke(_quickDesktop);
+            if (ShowQuickButton)
+                NoteRequested?.Invoke(_quickTarget.Id, _quickTarget.Number);
+        };
+        _quick.MouseUp += (_, args) =>
+        {
+            if (args.Button == MouseButtons.Right && ShowQuickButton && _quick.ClientRectangle.Contains(args.Location))
+                SwitchRequested?.Invoke(_quickTarget.Id);
         };
         ApplySkin(skin);
         _tips.SetToolTip(_grip, T("GripTooltip"));
@@ -223,22 +229,23 @@ internal sealed class Board : Form
     {
         foreach ((Guid id, NumberButton button) in _buttons)
             button.SetCurrent(id != Guid.Empty && id == current);
-        _quick.SetCurrent(_quickDesktop != Guid.Empty && _quickDesktop == current);
+        _quick.SetCurrent(_quickTarget.Id != Guid.Empty && _quickTarget.Id == current);
     }
 
     public void SetQuickDesktop(Guid desktop, int number, Guid current)
     {
-        bool wasEnabled = _quickDesktop != Guid.Empty;
-        _quickDesktop = desktop;
+        bool wasVisible = ShowQuickButton;
+        _quickTarget = (desktop, number);
         if (desktop != Guid.Empty)
         {
             _quick.Text = number.ToString();
-            string tooltip = T("QuickSwitchTooltip", number);
-            _quick.AccessibleName = tooltip;
+            string tooltip = T("DesktopButtonTooltip", number);
+            _quick.AccessibleName = T("NumberedNote", number);
+            _quick.AccessibleDescription = tooltip;
             _tips.SetToolTip(_quick, tooltip);
         }
         _quick.SetCurrent(desktop != Guid.Empty && desktop == current);
-        if (!_dragging && wasEnabled != (desktop != Guid.Empty) && !_expandedBounds.IsEmpty)
+        if (!_dragging && wasVisible != ShowQuickButton && !_expandedBounds.IsEmpty)
             ApplyWindowBounds();
     }
 
@@ -319,7 +326,7 @@ internal sealed class Board : Form
     private void ApplyWindowBounds()
     {
         Rectangle rail = _collapsed ? CollapsedBounds() : _expandedBounds;
-        bool showQuick = _quickDesktop != Guid.Empty;
+        bool showQuick = ShowQuickButton;
         Rectangle badge = showQuick ? QuickBounds(rail) : Rectangle.Empty;
         Rectangle button = showQuick && _collapsed ? AttachedButtonBounds(rail, badge) : badge;
         Rectangle window = showQuick ? Rectangle.Union(rail, button) : rail;
@@ -434,7 +441,7 @@ internal sealed class Board : Form
     }
 
     private bool IsOverQuickButton(Point position) =>
-        _quickDesktop != Guid.Empty && MoveBy(_quick.Bounds, Left, Top).Contains(position);
+        ShowQuickButton && MoveBy(_quick.Bounds, Left, Top).Contains(position);
 
     private Rectangle CollapsedBounds()
     {
@@ -553,12 +560,9 @@ internal sealed class Board : Form
     protected override void WndProc(ref Message message)
     {
         const int mouseActivate = 0x0021;
-        const int leftButtonDown = 0x0201;
         const int rightButtonDown = 0x0204;
-        long input = message.LParam.ToInt64() >> 16;
-        if (message.Msg == mouseActivate &&
-            ((input == rightButtonDown && (_collapsed || !_grip.ClientRectangle.Contains(_grip.PointToClient(Cursor.Position)))) ||
-             (input == leftButtonDown && IsOverQuickButton(Cursor.Position))))
+        if (message.Msg == mouseActivate && (message.LParam.ToInt64() >> 16) == rightButtonDown &&
+            (_collapsed || !_grip.ClientRectangle.Contains(_grip.PointToClient(Cursor.Position))))
         {
             message.Result = 3; // MA_NOACTIVATE
             return;
