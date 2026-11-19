@@ -22,6 +22,8 @@ internal sealed record Preferences
     public bool WrapNotes { get; init; } = true;
     public bool NoteFollowsBar { get; init; }
     public bool NoteTopMost { get; init; } = true;
+    public bool QuickSwitchEnabled { get; init; }
+    public Guid? QuickSwitchDesktopId { get; init; }
 }
 
 internal sealed class LocalData

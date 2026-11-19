@@ -98,7 +98,7 @@ internal sealed class SwitcherApplication : ApplicationContext
         {
             _settings = note
                 ? new NoteSettingsWindow(_preferences, SavePreferences)
-                : new SettingsWindow(_preferences, _board.Snap, SavePreferences, SetSnap);
+                : new SettingsWindow(_preferences, _board.Snap, _snapshot?.DesktopIds ?? [], SavePreferences, SetSnap);
             _settings.Icon = _board.Icon;
             _settings.FormClosed += (_, _) => _settings = null;
             _settings.Show();
@@ -127,12 +127,28 @@ internal sealed class SwitcherApplication : ApplicationContext
             _note.ApplyTopMost(updated.NoteTopMost);
         if (updated.NoteFollowsBar != previous.NoteFollowsBar)
             _note.SetBarCollapsed(_board.IsCollapsed && updated.NoteFollowsBar);
+        if (updated.QuickSwitchEnabled != previous.QuickSwitchEnabled || updated.QuickSwitchDesktopId != previous.QuickSwitchDesktopId)
+            UpdateQuickSwitch();
         if (updated.SkinId != previous.SkinId)
         {
             Skin skin = Skin.Find(updated.SkinId);
             _board.ApplySkin(skin);
             _note.ApplySkin(skin);
         }
+    }
+
+    private void UpdateQuickSwitch()
+    {
+        if (_preferences.QuickSwitchEnabled && _preferences.QuickSwitchDesktopId is Guid id && _snapshot is DesktopSnapshot snapshot)
+        {
+            int index = Array.IndexOf(snapshot.DesktopIds, id);
+            if (index >= 0)
+            {
+                _board.SetQuickDesktop(id, index + 1, snapshot.CurrentId);
+                return;
+            }
+        }
+        _board.SetQuickDesktop(Guid.Empty, 0, Guid.Empty);
     }
 
     private void SwitchTo(Guid id)
@@ -157,18 +173,27 @@ internal sealed class SwitcherApplication : ApplicationContext
         try
         {
             DesktopSnapshot snapshot = _desktops.Read();
-            if (_snapshot is null || !_snapshot.DesktopIds.SequenceEqual(snapshot.DesktopIds))
+            DesktopSnapshot? previous = _snapshot;
+            bool listChanged = previous is null || !previous.DesktopIds.SequenceEqual(snapshot.DesktopIds);
+            bool switched = previous is not null && previous.CurrentId != snapshot.CurrentId;
+            if (listChanged)
                 _board.SetDesktops(snapshot.DesktopIds, snapshot.CurrentId);
-            else if (_snapshot.CurrentId != snapshot.CurrentId)
+            else if (switched)
                 _board.Highlight(snapshot.CurrentId);
 
-            if (_snapshot is not null && _snapshot.CurrentId != snapshot.CurrentId)
+            if (switched)
             {
                 _note.HideForDesktopChange();
                 _settings?.Close();
             }
 
             _snapshot = snapshot;
+            if (listChanged)
+            {
+                UpdateQuickSwitch();
+                if (_settings is SettingsWindow settings)
+                    settings.DisplayDesktops(snapshot.DesktopIds);
+            }
             if (_pinnedWindow != _board.Handle && _desktops.Pin(_board.Handle))
                 _pinnedWindow = _board.Handle;
             _problem = _pinnedWindow != 0 ? null : T("PinPending");

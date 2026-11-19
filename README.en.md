@@ -19,6 +19,8 @@ Download the `Setup-win-x64.exe` installer from [Releases](../../releases/latest
 
 In App Settings, turn on **Snap to edge** and **Auto-hide at edge** to leave a narrow tab when you move the pointer away. Hover over the tab to show the bar. The reveal delay is adjustable from 0 to 1000 ms. App Settings also offers launch at sign-in and theme selection.
 
+Enable **Quick switch** in App Settings and choose a desktop. The round button beside the bar shows that desktop's number and stays visible when the bar hides. Left-click it to jump directly to the desktop. The number updates when desktops are reordered. If the selected desktop is deleted, choose a new target to show the button again.
+
 Notes appear as **Note 1**, **Note 2**, and so on. Each note is saved as plain text in `%LOCALAPPDATA%\DesktopNotesSwitcher\notes`. Use `Ctrl+S` to save immediately and `Esc` to close a note. Windows Settings can uninstall the app while keeping your local notes and preferences.
 
 In Note Settings, choose **Keep visible** or **Hide with the bar**. With the latter option, the note hides when the pointer leaves both the note and the bar. When the bar appears again, the open note returns. The **Pin** button beside the close button toggles whether notes stay above other windows. Notes stay visible and pinned by default.
