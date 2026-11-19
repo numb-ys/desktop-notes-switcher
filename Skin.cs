@@ -14,4 +14,6 @@ internal sealed record Skin(
         Color.FromArgb(255, 253, 241), Color.FromArgb(101, 89, 60), Color.FromArgb(141, 38, 24));
 
     public static IReadOnlyList<Skin> Available { get; } = [Default];
+
+    public static Skin Find(string id) => Available.FirstOrDefault(skin => skin.Id == id) ?? Default;
 }

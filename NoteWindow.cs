@@ -15,6 +15,7 @@ internal sealed class NoteWindow : Form
     private readonly Label _status = new() { AutoSize = true, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
     private readonly Timer _autosave = new() { Interval = 350 };
     private Skin _skin;
+    private Font? _editorFont;
     private Guid? _desktop;
     private bool _loading;
     private bool _dirty;
@@ -105,6 +106,19 @@ internal sealed class NoteWindow : Form
         _editor.BackColor = skin.Editor;
         _editor.ForeColor = skin.Ink;
         _status.ForeColor = _statusError ? skin.Error : skin.Hint;
+    }
+
+    public void ApplyTextOptions(Preferences preferences)
+    {
+        _editor.WordWrap = preferences.WrapNotes;
+        _editor.ScrollBars = preferences.WrapNotes ? ScrollBars.Vertical : ScrollBars.Both;
+        if (_editorFont?.SizeInPoints == preferences.NoteFontSize)
+            return;
+
+        Font? previous = _editorFont;
+        _editorFont = new Font(Font.FontFamily, preferences.NoteFontSize, FontStyle.Regular, GraphicsUnit.Point);
+        _editor.Font = _editorFont;
+        previous?.Dispose();
     }
 
     public void Toggle(Form anchor, Guid desktop, int number)
@@ -215,5 +229,7 @@ internal sealed class NoteWindow : Form
         if (disposing)
             _autosave.Dispose();
         base.Dispose(disposing);
+        if (disposing)
+            _editorFont?.Dispose();
     }
 }

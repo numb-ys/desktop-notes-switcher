@@ -1,6 +1,7 @@
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using Timer = System.Windows.Forms.Timer;
 
 namespace DesktopNotesSwitcher;
 
@@ -11,18 +12,27 @@ internal sealed class Board : Form
     private readonly FlowLayoutPanel _numbers = new() { WrapContents = false, AutoScroll = true };
     private readonly Dictionary<Guid, NumberButton> _buttons = new();
     private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
+    private readonly Timer _pointerTimer = new() { Interval = 40 };
     private Placement _placement;
     private Skin _skin;
+    private Rectangle _expandedBounds;
+    private long _lastPointerInside;
+    private long? _hoverSince;
+    private int _revealDelay;
+    private bool _collapseAtEdge;
+    private bool _collapsed;
     private Point? _dragOrigin;
     private Point _windowOrigin;
     private bool _dragging;
 
     public event Action<Guid, int>? NoteRequested;
     public event Action<Guid>? SwitchRequested;
+    public event Action? NoteSettingsRequested;
+    public event Action? ApplicationSettingsRequested;
     public event Action<Placement>? PlacementChanged;
     public event Action? ExplorerRestarted;
     public bool Snap => _placement.Snap;
-    public void SetGripMenu(ContextMenuStrip menu) => _grip.ContextMenuStrip = menu;
+    private bool AutoCollapse => _collapseAtEdge && Snap && _placement.Side != DockSide.None;
 
     public Board(Placement placement, Skin skin)
     {
@@ -37,11 +47,12 @@ internal sealed class Board : Form
         Controls.Add(_numbers);
         Controls.Add(_grip);
         ApplySkin(skin);
-        _tips.SetToolTip(_grip, "拖动移动 · 右键打开菜单");
+        _tips.SetToolTip(_grip, "左键便笺设置 · 右键程序设置 · 拖动移动");
         _grip.MouseDown += StartDrag;
         _grip.MouseMove += Drag;
         _grip.MouseUp += FinishDrag;
         _grip.MouseCaptureChanged += (_, _) => FinishDrag();
+        _pointerTimer.Tick += (_, _) => TrackPointer(Cursor.Position, Environment.TickCount64);
         SystemEvents.DisplaySettingsChanged += DisplayChanged;
         DpiChanged += (_, _) =>
         {
@@ -51,6 +62,82 @@ internal sealed class Board : Form
     }
 
     protected override bool ShowWithoutActivation => true;
+
+    public void ApplyEdgeOptions(Preferences preferences)
+    {
+        _collapseAtEdge = preferences.CollapseAtEdge;
+        _revealDelay = preferences.RevealDelayMs;
+        if (_collapsed && !AutoCollapse)
+            RevealBoard();
+        else
+            ResetPointerTracking();
+    }
+
+    public void RevealBoard(bool fromTray = false)
+    {
+        if (_collapsed)
+        {
+            _collapsed = false;
+            ApplyWindowBounds();
+        }
+        ResetPointerTracking();
+        if (fromTray)
+            _lastPointerInside += 1200;
+    }
+
+    private void ResetPointerTracking()
+    {
+        if (Disposing || IsDisposed)
+            return;
+        _lastPointerInside = Environment.TickCount64;
+        _hoverSince = null;
+        _pointerTimer.Enabled = Visible && AutoCollapse && _dragOrigin is null;
+    }
+
+    private void TrackPointer(Point position, long now)
+    {
+        bool inside = Bounds.Contains(position);
+        if (_collapsed)
+        {
+            if (!inside)
+            {
+                _hoverSince = null;
+                return;
+            }
+            _hoverSince ??= now;
+            if (now - _hoverSince.Value >= _revealDelay)
+                RevealBoard();
+            return;
+        }
+
+        if (inside)
+            _lastPointerInside = now;
+        if (now - _lastPointerInside < 350)
+            return;
+        _collapsed = true;
+        _hoverSince = null;
+        ApplyWindowBounds();
+    }
+
+    protected override void OnVisibleChanged(EventArgs args)
+    {
+        base.OnVisibleChanged(args);
+        ResetPointerTracking();
+    }
+
+    protected override void OnMouseEnter(EventArgs args)
+    {
+        base.OnMouseEnter(args);
+        if (_collapsed)
+            TrackPointer(Cursor.Position, Environment.TickCount64);
+    }
+
+    protected override void OnMouseLeave(EventArgs args)
+    {
+        base.OnMouseLeave(args);
+        if (!Bounds.Contains(Cursor.Position))
+            _hoverSince = null;
+    }
 
     public void ApplySkin(Skin skin)
     {
@@ -122,13 +209,18 @@ internal sealed class Board : Form
 
     public void ResetPosition()
     {
-        _placement = Placement.Default;
+        RevealBoard();
+        _placement = Placement.Default with { Snap = Snap, Side = Snap ? DockSide.Right : DockSide.None };
         FitToDisplay();
+        ResetPointerTracking();
         PlacementChanged?.Invoke(_placement);
     }
 
     public void SetSnap(bool enabled)
     {
+        if (enabled == Snap)
+            return;
+        RevealBoard();
         DockSide side = enabled ? FindSide(Screen.FromControl(this).WorkingArea) : DockSide.None;
         CommitPosition(side, enabled);
     }
@@ -175,13 +267,44 @@ internal sealed class Board : Form
         if (placement.Side == DockSide.Right) left = work.Right - outerWidth;
         if (placement.Side == DockSide.Top) top = work.Top;
         if (placement.Side == DockSide.Bottom) top = work.Bottom - outerHeight;
-        SetBounds(left, top, outerWidth, outerHeight);
+        _expandedBounds = new Rectangle(left, top, outerWidth, outerHeight);
+        ApplyWindowBounds();
+    }
 
-        using GraphicsPath shape = Rounded(new Rectangle(0, 0, Width, Height), Scale(18));
+    private void ApplyWindowBounds()
+    {
+        _grip.Visible = !_collapsed;
+        _numbers.Visible = !_collapsed;
+        Bounds = _collapsed ? CollapsedBounds() : _expandedBounds;
+        Cursor = _collapsed ? Cursors.Hand : Cursors.Default;
         Region? previous = Region;
-        Region = new Region(shape);
+        if (_collapsed)
+        {
+            Region = null;
+        }
+        else
+        {
+            using GraphicsPath shape = Rounded(new Rectangle(0, 0, Width, Height), Scale(18));
+            Region = new Region(shape);
+        }
         previous?.Dispose();
         Invalidate();
+    }
+
+    private Rectangle CollapsedBounds()
+    {
+        Rectangle full = _expandedBounds;
+        int strip = Scale(5);
+        if (_placement.Side is DockSide.Left or DockSide.Right)
+        {
+            int length = Math.Min(full.Height, Scale(52));
+            int x = _placement.Side == DockSide.Left ? full.Left : full.Right - strip;
+            return new Rectangle(x, full.Top + (full.Height - length) / 2, strip, length);
+        }
+
+        int width = Math.Min(full.Width, Scale(52));
+        int y = _placement.Side == DockSide.Top ? full.Top : full.Bottom - strip;
+        return new Rectangle(full.Left + (full.Width - width) / 2, y, width, strip);
     }
 
     private static int Position(int start, int travel, double fraction, int? absolute)
@@ -201,6 +324,7 @@ internal sealed class Board : Form
         _dragOrigin = _grip.PointToScreen(args.Location);
         _windowOrigin = Location;
         _grip.Capture = true;
+        _pointerTimer.Stop();
     }
 
     private void Drag(object? sender, MouseEventArgs args)
@@ -217,8 +341,16 @@ internal sealed class Board : Form
 
     private void FinishDrag(object? sender, MouseEventArgs args)
     {
-        if (args.Button == MouseButtons.Left)
-            FinishDrag();
+        bool withinIcon = _grip.ClientRectangle.Contains(args.Location);
+        if (args.Button == MouseButtons.Right && withinIcon)
+            ApplicationSettingsRequested?.Invoke();
+        if (args.Button != MouseButtons.Left)
+            return;
+
+        bool clicked = _dragOrigin.HasValue && !_dragging && withinIcon;
+        FinishDrag();
+        if (clicked)
+            NoteSettingsRequested?.Invoke();
     }
 
     private void FinishDrag()
@@ -228,7 +360,10 @@ internal sealed class Board : Form
         _dragOrigin = null;
         _grip.Capture = false;
         if (!_dragging)
+        {
+            ResetPointerTracking();
             return;
+        }
         _dragging = false;
         Rectangle work = Screen.FromControl(this).WorkingArea;
         CommitPosition(Snap ? FindSide(work) : DockSide.None, Snap);
@@ -257,6 +392,7 @@ internal sealed class Board : Form
             X = Math.Clamp((double)(Left - work.Left) / Math.Max(1, work.Width - Width), 0, 1),
             Y = Math.Clamp((double)(Top - work.Top) / Math.Max(1, work.Height - Height), 0, 1)
         };
+        ResetPointerTracking();
         PlacementChanged?.Invoke(_placement);
     }
 
@@ -270,7 +406,8 @@ internal sealed class Board : Form
     {
         const int mouseActivate = 0x0021;
         const int rightButtonDown = 0x0204;
-        if (message.Msg == mouseActivate && (message.LParam.ToInt64() >> 16) == rightButtonDown)
+        if (message.Msg == mouseActivate && (message.LParam.ToInt64() >> 16) == rightButtonDown &&
+            (_collapsed || !_grip.ClientRectangle.Contains(_grip.PointToClient(Cursor.Position))))
         {
             message.Result = 3; // MA_NOACTIVATE
             return;
@@ -283,6 +420,12 @@ internal sealed class Board : Form
     protected override void OnPaint(PaintEventArgs args)
     {
         base.OnPaint(args);
+        if (_collapsed)
+        {
+            using var strip = new SolidBrush(_skin.Grip);
+            args.Graphics.FillRectangle(strip, ClientRectangle);
+            return;
+        }
         args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         using var outline = new Pen(_skin.Outline, Scale(1));
         using GraphicsPath shape = Rounded(new Rectangle(1, 1, Width - 2, Height - 2), Scale(16));
@@ -294,6 +437,7 @@ internal sealed class Board : Form
         if (disposing)
         {
             SystemEvents.DisplaySettingsChanged -= DisplayChanged;
+            _pointerTimer.Dispose();
             _tips.Dispose();
         }
         base.Dispose(disposing);

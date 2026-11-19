@@ -10,10 +10,20 @@ internal sealed record Placement(string Display, double X, double Y, DockSide Si
     public static Placement Default { get; } = new("", 1, .24, DockSide.Right, true);
 }
 
+internal sealed record Preferences
+{
+    public const int MaxRevealDelay = 1000;
+    public const int MinNoteFontSize = 9;
+    public const int MaxNoteFontSize = 24;
+    public string SkinId { get; init; } = Skin.Default.Id;
+    public bool CollapseAtEdge { get; init; }
+    public int RevealDelayMs { get; init; } = 200;
+    public int NoteFontSize { get; init; } = MinNoteFontSize;
+    public bool WrapNotes { get; init; } = true;
+}
+
 internal sealed class LocalData
 {
-    private sealed record Preferences(string SkinId);
-
     private readonly string _root = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DesktopNotesSwitcher");
     private readonly JsonSerializerOptions _json = new()
@@ -43,26 +53,28 @@ internal sealed class LocalData
     public void WritePlacement(Placement placement) =>
         Write(Path.Combine(_root, "placement.json"), JsonSerializer.Serialize(placement, _json));
 
-    public Skin ReadSkin()
+    public Preferences ReadPreferences()
     {
         try
         {
             string path = Path.Combine(_root, "preferences.json");
-            if (File.Exists(path))
-            {
-                string? id = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path), _json)?.SkinId;
-                return Skin.Available.FirstOrDefault(skin => skin.Id == id) ?? Skin.Default;
-            }
+            if (File.Exists(path) &&
+                JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path), _json) is Preferences preferences)
+                return preferences with
+                {
+                    RevealDelayMs = Math.Clamp(preferences.RevealDelayMs, 0, Preferences.MaxRevealDelay),
+                    NoteFontSize = Math.Clamp(preferences.NoteFontSize, Preferences.MinNoteFontSize, Preferences.MaxNoteFontSize)
+                };
         }
         catch (Exception error) when (IsStorageError(error) || error is JsonException)
         {
             // Use the default when a preference from disk cannot be loaded.
         }
-        return Skin.Default;
+        return new Preferences();
     }
 
-    public void WriteSkin(Skin skin) =>
-        Write(Path.Combine(_root, "preferences.json"), JsonSerializer.Serialize(new Preferences(skin.Id), _json));
+    public void WritePreferences(Preferences preferences) =>
+        Write(Path.Combine(_root, "preferences.json"), JsonSerializer.Serialize(preferences, _json));
 
     public string ReadNote(Guid desktop)
     {

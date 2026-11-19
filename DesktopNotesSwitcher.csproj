@@ -6,7 +6,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>桌面便笺</Product>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <ApplicationManifest>app.manifest</ApplicationManifest>

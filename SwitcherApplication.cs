@@ -13,20 +13,25 @@ internal sealed class SwitcherApplication : ApplicationContext
     private readonly ContextMenuStrip _menu = new();
     private readonly ToolStripMenuItem _status = new() { Enabled = false };
     private readonly Timer _refresh = new() { Interval = 650 };
-    private Skin _skin;
-    private SettingsWindow? _settings;
+    private Preferences _preferences;
+    private SettingsDialog? _settings;
     private DesktopSnapshot? _snapshot;
     private nint _pinnedWindow;
     private string? _problem;
 
     public SwitcherApplication(Icon icon)
     {
-        _skin = _data.ReadSkin();
-        _board = new Board(_data.ReadPlacement(), _skin) { Icon = icon };
-        _note = new NoteWindow(_data, _skin) { Icon = icon };
+        _preferences = _data.ReadPreferences();
+        Skin skin = Skin.Find(_preferences.SkinId);
+        _board = new Board(_data.ReadPlacement(), skin) { Icon = icon };
+        _board.ApplyEdgeOptions(_preferences);
+        _note = new NoteWindow(_data, skin) { Icon = icon };
+        _note.ApplyTextOptions(_preferences);
         MainForm = _board;
         _board.NoteRequested += (id, number) => _note.Toggle(_board, id, number);
         _board.SwitchRequested += SwitchTo;
+        _board.NoteSettingsRequested += () => ShowSettings(note: true);
+        _board.ApplicationSettingsRequested += () => ShowSettings(note: false);
         _board.PlacementChanged += SavePlacement;
         _board.ExplorerRestarted += ResetConnection;
         _board.FormClosing += (_, args) =>
@@ -35,6 +40,7 @@ internal sealed class SwitcherApplication : ApplicationContext
             if (!saved && args.CloseReason == CloseReason.UserClosing)
             {
                 args.Cancel = true;
+                _board.RevealBoard();
                 _note.Reveal(_board);
             }
         };
@@ -42,9 +48,10 @@ internal sealed class SwitcherApplication : ApplicationContext
         _menu.Items.Add("显示悬浮条", null, (_, _) => ShowBoard());
         _menu.Items.Add("定位到主屏右侧", null, (_, _) => _board.ResetPosition());
         var snap = new ToolStripMenuItem("自动吸附屏幕边缘") { CheckOnClick = true };
-        snap.Click += (_, _) => _board.SetSnap(snap.Checked);
+        snap.Click += (_, _) => SetSnap(snap.Checked);
         _menu.Items.Add(snap);
-        _menu.Items.Add("设置…", null, (_, _) => ShowSettings());
+        _menu.Items.Add("便笺设置…", null, (_, _) => ShowSettings(note: true));
+        _menu.Items.Add("程序设置…", null, (_, _) => ShowSettings(note: false));
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(_status);
         _menu.Items.Add("退出", null, (_, _) => _board.Close());
@@ -53,8 +60,6 @@ internal sealed class SwitcherApplication : ApplicationContext
             snap.Checked = _board.Snap;
             _status.Text = _problem ?? "右键切换 · 左键打开便笺";
         };
-        _board.SetGripMenu(_menu);
-
         _tray = new NotifyIcon { Icon = icon, Text = "桌面便笺", ContextMenuStrip = _menu, Visible = true };
         _tray.MouseClick += (_, args) =>
         {
@@ -76,26 +81,49 @@ internal sealed class SwitcherApplication : ApplicationContext
     {
         _board.FitToDisplay();
         _board.Show();
+        _board.RevealBoard(fromTray: true);
         _board.BringToFront();
         RefreshDesktops();
     }
 
-    private void ShowSettings()
+    private void ShowSettings(bool note)
     {
+        if (_settings is not null && (_settings is NoteSettingsWindow) != note)
+            _settings.Close();
         if (_settings is null)
         {
-            _settings = new SettingsWindow(_data, _skin, ApplySkin) { Icon = _board.Icon };
+            _settings = note
+                ? new NoteSettingsWindow(_preferences, SavePreferences)
+                : new SettingsWindow(_preferences, _board.Snap, SavePreferences, SetSnap);
+            _settings.Icon = _board.Icon;
             _settings.FormClosed += (_, _) => _settings = null;
             _settings.Show();
         }
         _settings.Activate();
     }
 
-    private void ApplySkin(Skin skin)
+    private void SetSnap(bool enabled)
     {
-        _skin = skin;
-        _board.ApplySkin(skin);
-        _note.ApplySkin(skin);
+        _board.SetSnap(enabled);
+        if (_settings is SettingsWindow settings)
+            settings.DisplaySnap(_board.Snap);
+    }
+
+    private void SavePreferences(Preferences updated)
+    {
+        _data.WritePreferences(updated);
+        Preferences previous = _preferences;
+        _preferences = updated;
+        if (updated.CollapseAtEdge != previous.CollapseAtEdge || updated.RevealDelayMs != previous.RevealDelayMs)
+            _board.ApplyEdgeOptions(updated);
+        if (updated.NoteFontSize != previous.NoteFontSize || updated.WrapNotes != previous.WrapNotes)
+            _note.ApplyTextOptions(updated);
+        if (updated.SkinId != previous.SkinId)
+        {
+            Skin skin = Skin.Find(updated.SkinId);
+            _board.ApplySkin(skin);
+            _note.ApplySkin(skin);
+        }
     }
 
     private void SwitchTo(Guid id)
