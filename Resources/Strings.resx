@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>Desktop Notes Switcher</value></data>
+  <data name="BoardAccessibility" xml:space="preserve"><value>Desktop notes bar</value></data>
+  <data name="GripTooltip" xml:space="preserve"><value>Left-click for note settings · Right-click for app settings · Drag to move</value></data>
+  <data name="Note" xml:space="preserve"><value>Note</value></data>
+  <data name="NumberedNote" xml:space="preserve"><value>Note {0}</value></data>
+  <data name="OpenNote" xml:space="preserve"><value>Open note</value></data>
+  <data name="DesktopButtonTooltip" xml:space="preserve"><value>Desktop {0} · Left-click for note · Right-click to switch</value></data>
+  <data name="TrayShowBar" xml:space="preserve"><value>Show floating bar</value></data>
+  <data name="TrayResetPosition" xml:space="preserve"><value>Move to right edge of primary display</value></data>
+  <data name="TrayNoteSettings" xml:space="preserve"><value>Note settings…</value></data>
+  <data name="TrayAppSettings" xml:space="preserve"><value>App settings…</value></data>
+  <data name="TrayExit" xml:space="preserve"><value>Exit</value></data>
+  <data name="TrayInstructions" xml:space="preserve"><value>Right-click to switch · Left-click for note</value></data>
+  <data name="TrayStatus" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="SwitchRetry" xml:space="preserve"><value>Reconnecting to virtual desktops</value></data>
+  <data name="PinPending" xml:space="preserve"><value>Waiting for Windows to pin the bar</value></data>
+  <data name="ConnectError" xml:space="preserve"><value>Virtual desktops unavailable</value></data>
+  <data name="PositionSaveError" xml:space="preserve"><value>Could not save the floating bar position.</value></data>
+  <data name="UnsupportedWindows" xml:space="preserve"><value>Requires Windows 11 24H2 or later</value></data>
+  <data name="CloseNote" xml:space="preserve"><value>Close note</value></data>
+  <data name="NoteContent" xml:space="preserve"><value>Note content</value></data>
+  <data name="NoteSaving" xml:space="preserve"><value>Saving…</value></data>
+  <data name="NoteEmptyHint" xml:space="preserve"><value>Notes are saved automatically on this PC</value></data>
+  <data name="NoteSaved" xml:space="preserve"><value>Saved on this PC</value></data>
+  <data name="NoteReadError" xml:space="preserve"><value>Could not read the note. Reopen it to retry.</value></data>
+  <data name="NoteSaveError" xml:space="preserve"><value>Could not save. Press Ctrl+S to retry.</value></data>
+  <data name="AppSettingsTitle" xml:space="preserve"><value>Desktop Notes Switcher · App Settings</value></data>
+  <data name="NoteSettingsTitle" xml:space="preserve"><value>Desktop Notes Switcher · Note Settings</value></data>
+  <data name="SettingsSaveStatus" xml:space="preserve"><value>Settings save status</value></data>
+  <data name="Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Enable" xml:space="preserve"><value>Enable</value></data>
+  <data name="SettingsSaved" xml:space="preserve"><value>Saved.</value></data>
+  <data name="SettingsSaveError" xml:space="preserve"><value>Could not save settings.</value></data>
+  <data name="EdgeSnap" xml:space="preserve"><value>Snap to edge</value></data>
+  <data name="EdgeSnapDescription" xml:space="preserve"><value>Snap when dragged near a screen edge.</value></data>
+  <data name="EdgeCollapse" xml:space="preserve"><value>Auto-hide at edge</value></data>
+  <data name="EdgeCollapseDescription" xml:space="preserve"><value>Leave a narrow tab when the pointer moves away.</value></data>
+  <data name="RevealDelay" xml:space="preserve"><value>Reveal delay</value></data>
+  <data name="RevealDelayAccessibility" xml:space="preserve"><value>Reveal delay in milliseconds</value></data>
+  <data name="RevealDelayDescription" xml:space="preserve"><value>Wait before showing the bar.</value></data>
+  <data name="RevealImmediately" xml:space="preserve"><value>Instant</value></data>
+  <data name="DelayMilliseconds" xml:space="preserve"><value>{0} ms</value></data>
+  <data name="Startup" xml:space="preserve"><value>Launch at sign-in</value></data>
+  <data name="StartupDescription" xml:space="preserve"><value>Show the bar when you sign in to Windows.</value></data>
+  <data name="StartupReadError" xml:space="preserve"><value>Could not read the Windows startup entry.</value></data>
+  <data name="StartupEnabled" xml:space="preserve"><value>Launch at sign-in is enabled.</value></data>
+  <data name="StartupDisabled" xml:space="preserve"><value>Launch at sign-in is disabled.</value></data>
+  <data name="StartupUpdateError" xml:space="preserve"><value>Could not update the Windows startup entry.</value></data>
+  <data name="Skin" xml:space="preserve"><value>Theme</value></data>
+  <data name="SkinDescription" xml:space="preserve"><value>Applies to the floating bar and notes.</value></data>
+  <data name="DefaultSkin" xml:space="preserve"><value>Default Notes</value></data>
+  <data name="NoteFontSize" xml:space="preserve"><value>Note font size</value></data>
+  <data name="FontSize" xml:space="preserve"><value>Font size</value></data>
+  <data name="FontSizeDescription" xml:space="preserve"><value>Change the text size in all notes.</value></data>
+  <data name="WordWrap" xml:space="preserve"><value>Word wrap</value></data>
+  <data name="WordWrapDescription" xml:space="preserve"><value>Wrap long lines to fit the note.</value></data>
+</root>

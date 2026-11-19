@@ -6,6 +6,36 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
+
+function Read-UiStrings([string]$File) {
+    $strings = [Collections.Generic.Dictionary[string,string]]::new([StringComparer]::Ordinal)
+    $document = [xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot "..\Resources\$File") -Raw -Encoding utf8)
+    foreach ($node in $document.root.data) {
+        if ([string]::IsNullOrWhiteSpace($node.value)) {
+            throw "Missing translation for '$($node.name)' in $File."
+        }
+        $strings.Add($node.name, $node.value)
+    }
+    return $strings
+}
+
+function Get-Placeholders([string]$Text) {
+    [regex]::Matches($Text, '\{(\d+)(?:[,:][^{}]*)?\}') |
+        ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
+}
+
+$english = Read-UiStrings 'Strings.resx'
+$chinese = Read-UiStrings 'Strings.zh-CN.resx'
+foreach ($key in $english.Keys) {
+    if (-not $chinese.ContainsKey($key)) { throw "Missing Chinese translation for '$key'." }
+    if (((Get-Placeholders $english[$key]) -join ',') -ne ((Get-Placeholders $chinese[$key]) -join ',')) {
+        throw "English and Chinese placeholders differ for '$key'."
+    }
+}
+foreach ($key in $chinese.Keys) {
+    if (-not $english.ContainsKey($key)) { throw "Missing English translation for '$key'." }
+}
+
 $compiler = (Get-Command -Name $Iscc -CommandType Application).Source
 $project = Join-Path $PSScriptRoot '..\DesktopNotesSwitcher.csproj'
 $version = (dotnet msbuild $project -nologo -getProperty:Version).Trim()

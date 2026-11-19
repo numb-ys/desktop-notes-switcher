@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Timer = System.Windows.Forms.Timer;
+using static DesktopNotesSwitcher.UiText;
 
 namespace DesktopNotesSwitcher;
 
@@ -45,22 +46,22 @@ internal sealed class SwitcherApplication : ApplicationContext
             }
         };
 
-        _menu.Items.Add("显示悬浮条", null, (_, _) => ShowBoard());
-        _menu.Items.Add("定位到主屏右侧", null, (_, _) => _board.ResetPosition());
-        var snap = new ToolStripMenuItem("自动吸附屏幕边缘") { CheckOnClick = true };
+        _menu.Items.Add(T("TrayShowBar"), null, (_, _) => ShowBoard());
+        _menu.Items.Add(T("TrayResetPosition"), null, (_, _) => _board.ResetPosition());
+        var snap = new ToolStripMenuItem(T("EdgeSnap")) { CheckOnClick = true };
         snap.Click += (_, _) => SetSnap(snap.Checked);
         _menu.Items.Add(snap);
-        _menu.Items.Add("便笺设置…", null, (_, _) => ShowSettings(note: true));
-        _menu.Items.Add("程序设置…", null, (_, _) => ShowSettings(note: false));
+        _menu.Items.Add(T("TrayNoteSettings"), null, (_, _) => ShowSettings(note: true));
+        _menu.Items.Add(T("TrayAppSettings"), null, (_, _) => ShowSettings(note: false));
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(_status);
-        _menu.Items.Add("退出", null, (_, _) => _board.Close());
+        _menu.Items.Add(T("TrayExit"), null, (_, _) => _board.Close());
         _menu.Opening += (_, _) =>
         {
             snap.Checked = _board.Snap;
-            _status.Text = _problem ?? "右键切换 · 左键打开便笺";
+            _status.Text = _problem ?? T("TrayInstructions");
         };
-        _tray = new NotifyIcon { Icon = icon, Text = "桌面便笺", ContextMenuStrip = _menu, Visible = true };
+        _tray = new NotifyIcon { Icon = icon, Text = T("AppName"), ContextMenuStrip = _menu, Visible = true };
         _tray.MouseClick += (_, args) =>
         {
             if (args.Button == MouseButtons.Left)
@@ -140,7 +141,7 @@ internal sealed class SwitcherApplication : ApplicationContext
         catch (COMException)
         {
             ResetConnection();
-            _problem = "桌面已变动或暂时无法切换，正在重新连接";
+            _problem = T("SwitchRetry");
         }
     }
 
@@ -164,7 +165,7 @@ internal sealed class SwitcherApplication : ApplicationContext
             _snapshot = snapshot;
             if (_pinnedWindow != _board.Handle && _desktops.Pin(_board.Handle))
                 _pinnedWindow = _board.Handle;
-            _problem = _pinnedWindow != 0 ? null : "正在等待 Windows 固定悬浮条";
+            _problem = _pinnedWindow != 0 ? null : T("PinPending");
         }
         catch (PlatformNotSupportedException error)
         {
@@ -173,9 +174,9 @@ internal sealed class SwitcherApplication : ApplicationContext
         catch (Exception error) when (error is COMException or InvalidCastException)
         {
             ResetConnection();
-            _problem = "无法连接 Windows 虚拟桌面";
+            _problem = T("ConnectError");
         }
-        _tray.Text = _problem is null ? "桌面便笺" : $"桌面便笺 · {_problem}";
+        _tray.Text = _problem is null ? T("AppName") : T("TrayStatus", T("AppName"), _problem);
     }
 
     private void ResetConnection()
@@ -192,7 +193,7 @@ internal sealed class SwitcherApplication : ApplicationContext
         }
         catch (Exception error) when (LocalData.IsStorageError(error))
         {
-            _tray.ShowBalloonTip(3500, "桌面便笺", "无法保存悬浮条位置。", ToolTipIcon.Warning);
+            _tray.ShowBalloonTip(3500, T("AppName"), T("PositionSaveError"), ToolTipIcon.Warning);
         }
     }
 

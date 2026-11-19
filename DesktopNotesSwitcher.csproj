@@ -6,8 +6,9 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.3.0</Version>
-    <Product>桌面便笺</Product>
+    <Version>0.4.0</Version>
+    <Product>Desktop Notes Switcher</Product>
+    <NeutralLanguage>en</NeutralLanguage>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>assets/notes.ico</ApplicationIcon>

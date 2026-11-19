@@ -1,10 +1,12 @@
 # 桌面便笺 · Desktop Notes Switcher
 
+[English documentation](README.en.md)
+
 一个 Windows 虚拟桌面悬浮条。它显示系统当前拥有的桌面编号，并在切换桌面时保留在屏幕的同一位置。
 
 ## 安装与使用
 
-从 [Releases](../../releases/latest) 下载名称以 `Setup-win-x64.exe` 结尾的安装包，双击打开安装向导。安装包自带运行时，安装完成后可从开始菜单打开「桌面便笺」。如果便携版已经运行，请先从托盘菜单退出。
+从 [Releases](../../releases/latest) 下载名称以 `Setup-win-x64.exe` 结尾的安装包，双击后选择「简体中文」或「English」。安装向导和软件界面都会使用所选语言。安装包自带运行时，安装完成后可从开始菜单打开「桌面便笺」或「Desktop Notes Switcher」。运行安装向导前请先从托盘退出正在运行的版本。
 
 系统已有几个虚拟桌面就会显示几个编号，当前桌面会高亮。按 `Win + Ctrl + D` 可新建桌面。
 
@@ -21,7 +23,7 @@
 
 程序设置也提供开机启动和皮肤选择。开机启动默认关闭。皮肤当前提供「默认便笺」，悬浮条和便笺共用所选皮肤。
 
-便笺支持多行纯文本与自动保存，可用 `Ctrl + S` 立即保存，用 `Esc` 收起。每个桌面的便笺单独保存在 `%LOCALAPPDATA%\DesktopNotesSwitcher\notes`，应用不联网，也不读取 Windows 便笺。便笺跟随桌面的内部 ID，因此桌面改名或重排后仍能找到原内容，删除桌面也会保留其文本文件。
+便笺按桌面编号显示标题，例如「便笺1」或「Note 1」。便笺支持多行纯文本与自动保存，可用 `Ctrl + S` 立即保存，用 `Esc` 收起。每个桌面的便笺单独保存在 `%LOCALAPPDATA%\DesktopNotesSwitcher\notes`，应用不联网，也不读取 Windows 便笺。便笺跟随桌面的内部 ID，因此桌面改名或重排后仍能找到原内容，删除桌面也会保留其文本文件。
 
 可以通过 Windows 的「设置 → 应用 → 已安装的应用」卸载。卸载会移除安装文件、快捷方式和该安装副本的启动项，保留本地便笺与偏好。
 
@@ -42,3 +44,5 @@ pwsh -File installer/Build-Installer.ps1
 ```
 
 编译器安装在其他位置时，可通过 `-Iscc` 指定 `ISCC.exe` 的路径。项目采用 [MIT 许可证](LICENSE)，虚拟桌面 COM 声明参考了 [Markus Scholtes 的 VirtualDesktop](https://github.com/MScholtes/VirtualDesktop)。
+
+新增界面文字时，在 [英文资源](Resources/Strings.resx) 和 [简体中文资源](Resources/Strings.zh-CN.resx) 中添加同名条目，再通过 `UiText.T` 读取。安装包构建会检查两种语言的条目和格式占位符。

@@ -9,6 +9,7 @@ internal static class Program
         if (!firstInstance)
             return;
 
+        UiText.Initialize();
         ApplicationConfiguration.Initialize();
         using Stream iconStream = typeof(Program).Assembly.GetManifestResourceStream("DesktopNotesSwitcher.NotesIcon")!;
         using var icon = new Icon(iconStream);

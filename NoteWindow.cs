@@ -1,4 +1,5 @@
 using Timer = System.Windows.Forms.Timer;
+using static DesktopNotesSwitcher.UiText;
 
 namespace DesktopNotesSwitcher;
 
@@ -25,7 +26,7 @@ internal sealed class NoteWindow : Form
     {
         _data = data;
         _skin = skin;
-        Text = "桌面便笺";
+        Text = T("AppName");
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = false;
@@ -37,7 +38,7 @@ internal sealed class NoteWindow : Form
         _close = new Button
         {
             Text = "×",
-            AccessibleName = "收起便笺",
+            AccessibleName = T("CloseNote"),
             Size = new Size(30, 28),
             Anchor = AnchorStyles.Right,
             FlatStyle = FlatStyle.Flat
@@ -58,14 +59,14 @@ internal sealed class NoteWindow : Form
             AcceptsReturn = true,
             ScrollBars = ScrollBars.Vertical,
             BorderStyle = BorderStyle.FixedSingle,
-            AccessibleName = "便笺内容"
+            AccessibleName = T("NoteContent")
         };
         _editor.TextChanged += (_, _) =>
         {
             if (_loading)
                 return;
             _dirty = true;
-            SetStatus("保存中…");
+            SetStatus(T("NoteSaving"));
             _autosave.Stop();
             _autosave.Start();
         };
@@ -135,20 +136,20 @@ internal sealed class NoteWindow : Form
         }
 
         _desktop = desktop;
-        _heading.Text = number == 0 ? "便笺" : $"桌面 {number} 的便笺";
+        _heading.Text = number == 0 ? T("Note") : T("NumberedNote", number);
         Text = _heading.Text;
         _loading = true;
         try
         {
             _editor.ReadOnly = false;
             _editor.Text = _data.ReadNote(desktop);
-            SetStatus(_editor.TextLength == 0 ? "输入内容后自动保存到本机" : "已保存到本机");
+            SetStatus(T(_editor.TextLength == 0 ? "NoteEmptyHint" : "NoteSaved"));
         }
         catch (Exception error) when (LocalData.IsStorageError(error))
         {
             _editor.Text = "";
             _editor.ReadOnly = true;
-            SetStatus("无法读取便笺，重新打开可重试。", error: true);
+            SetStatus(T("NoteReadError"), error: true);
         }
         finally
         {
@@ -191,12 +192,12 @@ internal sealed class NoteWindow : Form
         {
             _data.WriteNote(desktop, _editor.Text);
             _dirty = false;
-            SetStatus("已保存到本机");
+            SetStatus(T("NoteSaved"));
             return true;
         }
         catch (Exception error) when (LocalData.IsStorageError(error))
         {
-            SetStatus("保存失败。按 Ctrl+S 重试。", error: true);
+            SetStatus(T("NoteSaveError"), error: true);
             return false;
         }
     }

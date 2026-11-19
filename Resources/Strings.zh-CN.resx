@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>桌面便笺</value></data>
+  <data name="BoardAccessibility" xml:space="preserve"><value>便笺悬浮条</value></data>
+  <data name="GripTooltip" xml:space="preserve"><value>左键便笺设置 · 右键程序设置 · 拖动移动</value></data>
+  <data name="Note" xml:space="preserve"><value>便笺</value></data>
+  <data name="NumberedNote" xml:space="preserve"><value>便笺{0}</value></data>
+  <data name="OpenNote" xml:space="preserve"><value>打开便笺</value></data>
+  <data name="DesktopButtonTooltip" xml:space="preserve"><value>桌面 {0} · 左键便笺，右键切换</value></data>
+  <data name="TrayShowBar" xml:space="preserve"><value>显示悬浮条</value></data>
+  <data name="TrayResetPosition" xml:space="preserve"><value>定位到主屏右侧</value></data>
+  <data name="TrayNoteSettings" xml:space="preserve"><value>便笺设置…</value></data>
+  <data name="TrayAppSettings" xml:space="preserve"><value>程序设置…</value></data>
+  <data name="TrayExit" xml:space="preserve"><value>退出</value></data>
+  <data name="TrayInstructions" xml:space="preserve"><value>右键切换 · 左键打开便笺</value></data>
+  <data name="TrayStatus" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="SwitchRetry" xml:space="preserve"><value>正在重新连接虚拟桌面</value></data>
+  <data name="PinPending" xml:space="preserve"><value>正在等待 Windows 固定悬浮条</value></data>
+  <data name="ConnectError" xml:space="preserve"><value>无法连接 Windows 虚拟桌面</value></data>
+  <data name="PositionSaveError" xml:space="preserve"><value>无法保存悬浮条位置。</value></data>
+  <data name="UnsupportedWindows" xml:space="preserve"><value>桌面切换需要 Windows 11 24H2 或更新版本。</value></data>
+  <data name="CloseNote" xml:space="preserve"><value>收起便笺</value></data>
+  <data name="NoteContent" xml:space="preserve"><value>便笺内容</value></data>
+  <data name="NoteSaving" xml:space="preserve"><value>保存中…</value></data>
+  <data name="NoteEmptyHint" xml:space="preserve"><value>输入内容后自动保存到本机</value></data>
+  <data name="NoteSaved" xml:space="preserve"><value>已保存到本机</value></data>
+  <data name="NoteReadError" xml:space="preserve"><value>无法读取便笺，重新打开可重试。</value></data>
+  <data name="NoteSaveError" xml:space="preserve"><value>保存失败。按 Ctrl+S 重试。</value></data>
+  <data name="AppSettingsTitle" xml:space="preserve"><value>桌面便笺 · 程序设置</value></data>
+  <data name="NoteSettingsTitle" xml:space="preserve"><value>桌面便笺 · 便笺设置</value></data>
+  <data name="SettingsSaveStatus" xml:space="preserve"><value>设置保存状态</value></data>
+  <data name="Done" xml:space="preserve"><value>完成</value></data>
+  <data name="Enable" xml:space="preserve"><value>启用</value></data>
+  <data name="SettingsSaved" xml:space="preserve"><value>已保存。</value></data>
+  <data name="SettingsSaveError" xml:space="preserve"><value>无法保存设置。</value></data>
+  <data name="EdgeSnap" xml:space="preserve"><value>边缘吸附</value></data>
+  <data name="EdgeSnapDescription" xml:space="preserve"><value>拖近屏幕边缘时自动贴边。</value></data>
+  <data name="EdgeCollapse" xml:space="preserve"><value>贴边收起</value></data>
+  <data name="EdgeCollapseDescription" xml:space="preserve"><value>离开悬浮条后只露出一小条。</value></data>
+  <data name="RevealDelay" xml:space="preserve"><value>弹出延迟</value></data>
+  <data name="RevealDelayAccessibility" xml:space="preserve"><value>弹出延迟（毫秒）</value></data>
+  <data name="RevealDelayDescription" xml:space="preserve"><value>鼠标停在边缘后等待的时间。</value></data>
+  <data name="RevealImmediately" xml:space="preserve"><value>立即</value></data>
+  <data name="DelayMilliseconds" xml:space="preserve"><value>{0} 毫秒</value></data>
+  <data name="Startup" xml:space="preserve"><value>开机启动</value></data>
+  <data name="StartupDescription" xml:space="preserve"><value>登录 Windows 后自动显示悬浮条。</value></data>
+  <data name="StartupReadError" xml:space="preserve"><value>无法读取 Windows 启动项。</value></data>
+  <data name="StartupEnabled" xml:space="preserve"><value>已开启开机启动。</value></data>
+  <data name="StartupDisabled" xml:space="preserve"><value>已关闭开机启动。</value></data>
+  <data name="StartupUpdateError" xml:space="preserve"><value>无法更新 Windows 启动项。</value></data>
+  <data name="Skin" xml:space="preserve"><value>皮肤</value></data>
+  <data name="SkinDescription" xml:space="preserve"><value>应用于悬浮条和便笺。</value></data>
+  <data name="DefaultSkin" xml:space="preserve"><value>默认便笺</value></data>
+  <data name="NoteFontSize" xml:space="preserve"><value>便笺字号</value></data>
+  <data name="FontSize" xml:space="preserve"><value>字号</value></data>
+  <data name="FontSizeDescription" xml:space="preserve"><value>调整所有便笺的正文大小。</value></data>
+  <data name="WordWrap" xml:space="preserve"><value>自动换行</value></data>
+  <data name="WordWrapDescription" xml:space="preserve"><value>长行随便笺宽度折行。</value></data>
+</root>

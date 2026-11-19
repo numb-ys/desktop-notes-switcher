@@ -1,10 +1,12 @@
+using static DesktopNotesSwitcher.UiText;
+
 namespace DesktopNotesSwitcher;
 
 internal sealed class SettingsWindow : SettingsDialog
 {
-    private readonly CheckBox _startup = Toggle("开机启动");
-    private readonly CheckBox _snap = Toggle("边缘吸附");
-    private readonly CheckBox _collapse = Toggle("贴边收起");
+    private readonly CheckBox _startup = Toggle(T("Startup"));
+    private readonly CheckBox _snap = Toggle(T("EdgeSnap"));
+    private readonly CheckBox _collapse = Toggle(T("EdgeCollapse"));
     private readonly TrackBar _delay = new()
     {
         Maximum = Preferences.MaxRevealDelay,
@@ -13,7 +15,7 @@ internal sealed class SettingsWindow : SettingsDialog
         TickFrequency = 200,
         AutoSize = false,
         Size = new Size(113, 33),
-        AccessibleName = "弹出延迟（毫秒）"
+        AccessibleName = T("RevealDelayAccessibility")
     };
     private readonly Label _delayValue = new() { Size = new Size(67, 33), TextAlign = ContentAlignment.MiddleRight };
     private readonly ComboBox _skinPicker = new()
@@ -21,12 +23,12 @@ internal sealed class SettingsWindow : SettingsDialog
         DropDownStyle = ComboBoxStyle.DropDownList,
         Width = 142,
         DisplayMember = nameof(Skin.Name),
-        AccessibleName = "皮肤"
+        AccessibleName = T("Skin")
     };
     private bool _startupEnabled;
 
     public SettingsWindow(Preferences preferences, bool snap, Action<Preferences> apply, Action<bool> setSnap)
-        : base("桌面便笺 · 程序设置", 5, preferences, apply)
+        : base(T("AppSettingsTitle"), 5, preferences, apply)
     {
         var delayInput = new FlowLayoutPanel
         {
@@ -37,11 +39,11 @@ internal sealed class SettingsWindow : SettingsDialog
         };
         delayInput.Controls.Add(_delay);
         delayInput.Controls.Add(_delayValue);
-        AddSetting("边缘吸附", "拖近屏幕边缘时自动贴边。", _snap);
-        AddSetting("贴边收起", "离开悬浮条后只露出一小条。", _collapse);
-        AddSetting("弹出延迟", "鼠标停在边缘后等待的时间。", delayInput);
-        AddSetting("开机启动", "登录 Windows 后自动显示悬浮条。", _startup);
-        AddSetting("皮肤", "应用于悬浮条和便笺。", _skinPicker);
+        AddSetting(T("EdgeSnap"), T("EdgeSnapDescription"), _snap);
+        AddSetting(T("EdgeCollapse"), T("EdgeCollapseDescription"), _collapse);
+        AddSetting(T("RevealDelay"), T("RevealDelayDescription"), delayInput);
+        AddSetting(T("Startup"), T("StartupDescription"), _startup);
+        AddSetting(T("Skin"), T("SkinDescription"), _skinPicker);
 
         _snap.Checked = snap;
         _collapse.Checked = preferences.CollapseAtEdge;
@@ -57,7 +59,7 @@ internal sealed class SettingsWindow : SettingsDialog
         catch (Exception error) when (IsSettingsError(error))
         {
             _startup.Enabled = false;
-            SetStatus("无法读取 Windows 启动项。", error: true);
+            SetStatus(T("StartupReadError"), error: true);
         }
 
         _snap.CheckedChanged += (_, _) =>
@@ -91,7 +93,7 @@ internal sealed class SettingsWindow : SettingsDialog
         _collapse.Enabled = _snap.Checked;
         _delay.Enabled = _snap.Checked && _collapse.Checked;
         _delayValue.Enabled = _delay.Enabled;
-        _delayValue.Text = _delay.Value == 0 ? "立即" : $"{_delay.Value} 毫秒";
+        _delayValue.Text = _delay.Value == 0 ? T("RevealImmediately") : T("DelayMilliseconds", _delay.Value);
     }
 
     private void SaveStartup()
@@ -102,12 +104,12 @@ internal sealed class SettingsWindow : SettingsDialog
         {
             StartupRegistration.SetEnabled(_startup.Checked);
             _startupEnabled = _startup.Checked;
-            SetStatus(_startupEnabled ? "已开启开机启动。" : "已关闭开机启动。");
+            SetStatus(T(_startupEnabled ? "StartupEnabled" : "StartupDisabled"));
         }
         catch (Exception error) when (IsSettingsError(error))
         {
             LoadControls(() => _startup.Checked = _startupEnabled);
-            SetStatus(error is IOException ? error.Message : "无法更新 Windows 启动项。", error: true);
+            SetStatus(T("StartupUpdateError"), error: true);
         }
     }
 }

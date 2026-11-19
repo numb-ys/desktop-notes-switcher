@@ -1,6 +1,7 @@
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using static DesktopNotesSwitcher.UiText;
 using Timer = System.Windows.Forms.Timer;
 
 namespace DesktopNotesSwitcher;
@@ -8,7 +9,7 @@ namespace DesktopNotesSwitcher;
 internal sealed class Board : Form
 {
     private readonly ToolTip _tips = new();
-    private readonly Grip _grip = new() { Cursor = Cursors.SizeAll, AccessibleName = "便笺悬浮条" };
+    private readonly Grip _grip = new() { Cursor = Cursors.SizeAll, AccessibleName = T("BoardAccessibility") };
     private readonly FlowLayoutPanel _numbers = new() { WrapContents = false, AutoScroll = true };
     private readonly Dictionary<Guid, NumberButton> _buttons = new();
     private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
@@ -38,7 +39,7 @@ internal sealed class Board : Form
     {
         _placement = placement;
         _skin = skin;
-        Text = "桌面便笺";
+        Text = T("AppName");
         AutoScaleMode = AutoScaleMode.Dpi;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
@@ -47,7 +48,7 @@ internal sealed class Board : Form
         Controls.Add(_numbers);
         Controls.Add(_grip);
         ApplySkin(skin);
-        _tips.SetToolTip(_grip, "左键便笺设置 · 右键程序设置 · 拖动移动");
+        _tips.SetToolTip(_grip, T("GripTooltip"));
         _grip.MouseDown += StartDrag;
         _grip.MouseMove += Drag;
         _grip.MouseUp += FinishDrag;
@@ -171,12 +172,12 @@ internal sealed class Board : Form
 
     private void AddNumber(Guid desktop, int number)
     {
-        string label = number == 0 ? "便笺" : number.ToString();
-        string tooltip = number == 0 ? "打开便笺" : $"桌面 {number} · 左键便笺，右键切换";
+        string label = number == 0 ? T("Note") : number.ToString();
+        string tooltip = number == 0 ? T("OpenNote") : T("DesktopButtonTooltip", number);
         var button = new NumberButton(_skin)
         {
             Text = label,
-            AccessibleName = number == 0 ? label : $"桌面 {number} 便笺",
+            AccessibleName = number == 0 ? label : T("NumberedNote", number),
             AccessibleDescription = tooltip,
             TabStop = false,
             Cursor = Cursors.Hand

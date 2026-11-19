@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using static DesktopNotesSwitcher.UiText;
 
 namespace DesktopNotesSwitcher;
 
@@ -22,7 +23,7 @@ internal sealed class VirtualDesktops : IDisposable
         if (_manager is not null)
             return;
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100))
-            throw new PlatformNotSupportedException("桌面切换需要 Windows 11 24H2 或更新版本。");
+            throw new PlatformNotSupportedException(T("UnsupportedWindows"));
 
         var shellType = Type.GetTypeFromCLSID(ShellClass)!;
         _shell = (IServiceProvider)Activator.CreateInstance(shellType)!;

@@ -1,4 +1,5 @@
 using System.Security;
+using static DesktopNotesSwitcher.UiText;
 
 namespace DesktopNotesSwitcher;
 
@@ -13,7 +14,7 @@ internal abstract class SettingsDialog : Form
     {
         Dock = DockStyle.Fill,
         TextAlign = ContentAlignment.MiddleLeft,
-        AccessibleName = "设置保存状态"
+        AccessibleName = T("SettingsSaveStatus")
     };
     private int _row;
 
@@ -36,7 +37,7 @@ internal abstract class SettingsDialog : Form
         BackColor = Color.FromArgb(242, 245, 248);
         ForeColor = Color.FromArgb(35, 45, 56);
 
-        var done = new Button { Text = "完成", Size = new Size(88, 33), Anchor = AnchorStyles.Right };
+        var done = new Button { Text = T("Done"), Size = new Size(88, 33), Anchor = AnchorStyles.Right };
         done.Click += (_, _) => Close();
         CancelButton = done;
         AcceptButton = done;
@@ -89,7 +90,7 @@ internal abstract class SettingsDialog : Form
 
     protected static CheckBox Toggle(string name, bool enabled = false) => new()
     {
-        Text = "启用",
+        Text = T("Enable"),
         AutoSize = true,
         AccessibleName = name,
         Checked = enabled
@@ -103,12 +104,12 @@ internal abstract class SettingsDialog : Form
         {
             _apply(updated);
             Current = updated;
-            SetStatus("已保存。");
+            SetStatus(T("SettingsSaved"));
         }
         catch (Exception error) when (IsSettingsError(error))
         {
             LoadControls(restore);
-            SetStatus("无法保存设置。", error: true);
+            SetStatus(T("SettingsSaveError"), error: true);
         }
     }
 

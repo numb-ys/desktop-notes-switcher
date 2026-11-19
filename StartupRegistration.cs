@@ -25,9 +25,9 @@ internal static class StartupRegistration
         string executable = Path.Combine(AppContext.BaseDirectory, "DesktopNotesSwitcher.exe");
         string command = $"\"{executable}\"";
         if (!File.Exists(executable))
-            throw new IOException("找不到可注册为启动项的程序。");
+            throw new IOException("The executable for the startup entry could not be found.");
         if (command.Length > 260)
-            throw new IOException("程序路径过长，无法注册为 Windows 启动项。");
+            throw new IOException("The executable path exceeds the Windows startup entry limit.");
 
         using RegistryKey run = Registry.CurrentUser.CreateSubKey(KeyPath);
         run.SetValue(ValueName, command, RegistryValueKind.String);
