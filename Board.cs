@@ -332,6 +332,7 @@ internal sealed class Board : Form
         }
         if (showQuick)
             _quick.Bounds = MoveBy(badge, -window.X, -window.Y);
+        _quick.SetAttachedToEdge(_collapsed && showQuick ? _placement.Side : DockSide.None);
         _quick.Visible = showQuick;
         Bounds = window;
         Cursor = _collapsed ? Cursors.Hand : Cursors.Default;
@@ -347,8 +348,15 @@ internal sealed class Board : Form
                 shape.AddRectangle(_railClient);
             else
                 shape.AddRoundedRectangle(_railClient, new Size(Scale(18), Scale(18)));
-            if (showQuick)
+            if (_collapsed && showQuick)
+            {
+                using GraphicsPath attachedBadge = CreateAttachedBadge();
+                shape.AddPath(attachedBadge, connect: false);
+            }
+            else if (showQuick)
+            {
                 shape.AddEllipse(_quick.Bounds);
+            }
             Region = new Region(shape);
         }
         previous?.Dispose();
@@ -364,13 +372,14 @@ internal sealed class Board : Form
     private Rectangle QuickBounds(Rectangle rail)
     {
         int size = Scale(28);
-        int gap = Scale(5);
+        int gap = _collapsed ? 0 : Scale(5);
+        int reach = size + (_collapsed ? Scale(4) : 0);
         int centeredX = Math.Clamp(rail.Left + (rail.Width - size) / 2, _workArea.Left, Math.Max(_workArea.Left, _workArea.Right - size));
         int centeredY = Math.Clamp(rail.Top + (rail.Height - size) / 2, _workArea.Top, Math.Max(_workArea.Top, _workArea.Bottom - size));
-        var left = new Rectangle(rail.Left - gap - size, centeredY, size, size);
-        var right = new Rectangle(rail.Right + gap, centeredY, size, size);
-        var top = new Rectangle(centeredX, rail.Top - gap - size, size, size);
-        var bottom = new Rectangle(centeredX, rail.Bottom + gap, size, size);
+        var left = new Rectangle(rail.Left - gap - reach, centeredY, reach, size);
+        var right = new Rectangle(rail.Right + gap, centeredY, reach, size);
+        var top = new Rectangle(centeredX, rail.Top - gap - reach, size, reach);
+        var bottom = new Rectangle(centeredX, rail.Bottom + gap, size, reach);
         return _placement.Side switch
         {
             DockSide.Left => right,
@@ -382,6 +391,36 @@ internal sealed class Board : Form
             _ when _workArea.Contains(bottom) => bottom,
             _ => top
         };
+    }
+
+    private GraphicsPath CreateAttachedBadge()
+    {
+        // Build both fillets tangent to the bulb and the vertical edge at x=0.
+        Rectangle badge = _quick.Bounds;
+        float diameter = Math.Min(badge.Width, badge.Height);
+        float radius = diameter / 2;
+        float extension = Math.Max(badge.Width, badge.Height) - diameter;
+        float fillet = radius * .3f;
+        float centerDistance = radius + fillet;
+        float deltaX = radius + extension - fillet;
+        float deltaY = MathF.Sqrt(centerDistance * centerDistance - deltaX * deltaX);
+        float angle = MathF.Atan2(deltaY, deltaX) * 180 / MathF.PI;
+
+        var path = new GraphicsPath();
+        path.AddArc(-2 * fillet, -deltaY - fillet, 2 * fillet, 2 * fillet, 0, 180 - angle);
+        path.AddArc(-diameter - extension, -radius, diameter, diameter, -angle, 2 * angle - 360);
+        path.AddArc(-2 * fillet, deltaY - fillet, 2 * fillet, 2 * fillet, angle - 180, 180 - angle);
+        path.CloseFigure();
+
+        using Matrix orientation = _placement.Side switch
+        {
+            DockSide.Left => new Matrix(-1, 0, 0, 1, _railClient.Right, badge.Top + radius),
+            DockSide.Top => new Matrix(0, -1, 1, 0, badge.Left + radius, _railClient.Bottom),
+            DockSide.Bottom => new Matrix(0, 1, 1, 0, badge.Left + radius, _railClient.Top),
+            _ => new Matrix(1, 0, 0, 1, _railClient.Left, badge.Top + radius)
+        };
+        path.Transform(orientation);
+        return path;
     }
 
     private bool IsOverQuickButton(Point position) =>
@@ -589,6 +628,20 @@ internal sealed class Board : Form
         private Skin _skin = skin;
         private bool _current;
         private bool _hovered;
+        private DockSide _attachment;
+
+        private Rectangle FaceBounds
+        {
+            get
+            {
+                if (_attachment == DockSide.None)
+                    return ClientRectangle;
+                int diameter = Math.Min(Width, Height);
+                int left = _attachment == DockSide.Left ? Width - diameter : 0;
+                int top = _attachment == DockSide.Top ? Height - diameter : 0;
+                return new Rectangle(left, top, diameter, diameter);
+            }
+        }
 
         public void SetSkin(Skin updated)
         {
@@ -599,6 +652,14 @@ internal sealed class Board : Form
         public void SetCurrent(bool current)
         {
             _current = current;
+            Invalidate();
+        }
+
+        public void SetAttachedToEdge(DockSide side)
+        {
+            if (_attachment == side)
+                return;
+            _attachment = side;
             Invalidate();
         }
 
@@ -618,25 +679,35 @@ internal sealed class Board : Form
 
         protected override void OnPaint(PaintEventArgs args)
         {
-            args.Graphics.Clear(_skin.Paper);
+            bool attached = _attachment != DockSide.None;
+            Rectangle labelBounds = FaceBounds;
+            args.Graphics.Clear(attached ? _skin.Grip : _skin.Paper);
             args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            Color fillColor = _current ? _skin.Selected : _skin.Number;
-            if (_hovered)
-                fillColor = _current ? _skin.SelectedHover : _skin.NumberHover;
-            using var fill = new SolidBrush(fillColor);
-            using var shape = new GraphicsPath();
-            var face = new Rectangle(0, 0, Width - 1, Height - 1);
-            if (round)
-                shape.AddEllipse(face);
-            else
-                shape.AddRoundedRectangle(face, new Size(LogicalToDeviceUnits(12), LogicalToDeviceUnits(12)));
-            args.Graphics.FillPath(fill, shape);
-            if (round)
+            if (!attached || _current || _hovered)
             {
-                using var border = new Pen(_skin.GripInk);
-                args.Graphics.DrawPath(border, shape);
+                Color fillColor = _current ? _skin.Selected : _skin.Number;
+                if (_hovered)
+                    fillColor = _current ? _skin.SelectedHover : _skin.NumberHover;
+                using var fill = new SolidBrush(fillColor);
+                using var shape = new GraphicsPath();
+                var face = new Rectangle(labelBounds.X, labelBounds.Y, labelBounds.Width - 1, labelBounds.Height - 1);
+                if (attached)
+                {
+                    int inset = LogicalToDeviceUnits(3);
+                    face.Inflate(-inset, -inset);
+                }
+                if (round)
+                    shape.AddEllipse(face);
+                else
+                    shape.AddRoundedRectangle(face, new Size(LogicalToDeviceUnits(12), LogicalToDeviceUnits(12)));
+                args.Graphics.FillPath(fill, shape);
+                if (round && !attached)
+                {
+                    using var border = new Pen(_skin.GripInk);
+                    args.Graphics.DrawPath(border, shape);
+                }
             }
-            TextRenderer.DrawText(args.Graphics, Text, Font, ClientRectangle, _current ? _skin.SelectedInk : _skin.Ink,
+            TextRenderer.DrawText(args.Graphics, Text, Font, labelBounds, _current ? _skin.SelectedInk : _skin.Ink,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
         }
     }
