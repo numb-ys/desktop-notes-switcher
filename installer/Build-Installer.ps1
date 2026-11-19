@@ -41,7 +41,7 @@ $project = Join-Path $PSScriptRoot '..\DesktopNotesSwitcher.csproj'
 $version = (dotnet msbuild $project -nologo -getProperty:Version).Trim()
 $output = (New-Item -ItemType Directory -Path (Join-Path $PSScriptRoot '..\artifacts') -Force).FullName
 $staging = Join-Path $output ("installer-payload-" + [Guid]::NewGuid().ToString('N'))
-$payload = (New-Item -ItemType Directory -Path $staging).FullName
+$payload = (New-Item -ItemType Directory -Path (Join-Path $staging 'app') -Force).FullName
 
 try {
     dotnet publish $project -c Release -r win-x64 --self-contained true -o $payload
@@ -59,8 +59,28 @@ try {
     Copy-Item -LiteralPath (Join-Path $runtimePath 'THIRD-PARTY-NOTICES.TXT') -Destination (Join-Path $licenses '.NET-Runtime-ThirdPartyNotices.txt')
     Copy-Item -LiteralPath (Join-Path $desktopPath 'LICENSE') -Destination (Join-Path $licenses 'WindowsDesktop-LICENSE.txt')
 
-    & $compiler /Q "/DAppVersion=$version" "/DPayload=$payload" "/O$output" (Join-Path $PSScriptRoot 'DesktopNotesSwitcher.iss')
-    Get-Item -LiteralPath (Join-Path $output "DesktopNotesSwitcher-v$version-Setup-win-x64.exe")
+    & $compiler /Q "/DAppVersion=$version" "/DPayload=$payload" "/O$staging" (Join-Path $PSScriptRoot 'DesktopNotesSwitcher.iss')
+
+    $launcher = Join-Path $staging "DesktopNotesSwitcher-v$version-Setup-win-x64.exe"
+    $csc = Join-Path ([Environment]::GetFolderPath('Windows')) 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+    $manifest = Join-Path $PSScriptRoot '..\app.manifest'
+    $icon = Join-Path $PSScriptRoot '..\assets\notes.ico'
+    $payloadExe = Join-Path $staging 'DesktopNotesSwitcher-Installer.exe'
+    $assemblyInfo = Join-Path $staging 'SetupVersion.cs'
+    @(
+        ('[assembly: System.Reflection.AssemblyVersion("{0}")]' -f $version)
+        ('[assembly: System.Reflection.AssemblyFileVersion("{0}")]' -f $version)
+        '[assembly: System.Reflection.AssemblyTitle("Desktop Notes Switcher Setup")]'
+    ) | Set-Content -LiteralPath $assemblyInfo -Encoding utf8
+    $compilerArguments = @(
+        '/nologo', '/codepage:65001', '/target:winexe', '/platform:x64', '/optimize+',
+        '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll',
+        "/win32manifest:$manifest", "/win32icon:$icon", "/resource:$payloadExe,InstallerPayload", "/out:$launcher",
+        (Join-Path $PSScriptRoot 'SetupLauncher.cs'), (Join-Path $PSScriptRoot 'LanguageWindow.cs'), $assemblyInfo
+    )
+    & $csc @compilerArguments
+    Move-Item -LiteralPath $launcher -Destination $output -Force
+    Get-Item -LiteralPath (Join-Path $output (Split-Path -Leaf $launcher))
 }
 finally {
     $resolved = (Resolve-Path -LiteralPath $staging).Path

@@ -20,6 +20,8 @@ internal sealed record Preferences
     public int RevealDelayMs { get; init; } = 200;
     public int NoteFontSize { get; init; } = MinNoteFontSize;
     public bool WrapNotes { get; init; } = true;
+    public bool NoteFollowsBar { get; init; }
+    public bool NoteTopMost { get; init; } = true;
 }
 
 internal sealed class LocalData

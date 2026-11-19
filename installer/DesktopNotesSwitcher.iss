@@ -29,11 +29,11 @@ UninstallDisplayIcon={app}\{#AppExe}
 VersionInfoVersion={#AppVersion}
 VersionInfoDescription=Desktop Notes Switcher Setup
 VersionInfoProductName=Desktop Notes Switcher
-OutputBaseFilename=DesktopNotesSwitcher-v{#AppVersion}-Setup-win-x64
+OutputBaseFilename=DesktopNotesSwitcher-Installer
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-ShowLanguageDialog=yes
+ShowLanguageDialog=no
 
 [Languages]
 Name: "chs"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
@@ -42,10 +42,6 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 chs.ProductName=桌面便笺
 en.ProductName=Desktop Notes Switcher
-
-[Messages]
-chs.SelectLanguageLabel=选择安装向导和软件界面的语言。
-en.SelectLanguageLabel=Choose the language for setup and the app.
 
 [Files]
 Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

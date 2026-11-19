@@ -96,6 +96,8 @@ internal abstract class SettingsDialog : Form
         Checked = enabled
     };
 
+    public void SyncPreferences(Preferences saved) => Current = saved;
+
     protected void Save(Preferences updated, Action restore)
     {
         if (Updating || Current == updated)

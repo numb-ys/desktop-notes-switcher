@@ -6,7 +6,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Product>Desktop Notes Switcher</Product>
     <NeutralLanguage>en</NeutralLanguage>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
@@ -15,6 +15,7 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="assets/notes.ico" LogicalName="DesktopNotesSwitcher.NotesIcon" />
+    <Compile Remove="installer/**/*.cs" />
     <None Update="LICENSE" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

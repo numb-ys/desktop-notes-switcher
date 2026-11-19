@@ -14,6 +14,7 @@ internal sealed class Board : Form
     private readonly Dictionary<Guid, NumberButton> _buttons = new();
     private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
     private readonly Timer _pointerTimer = new() { Interval = 40 };
+    private readonly Func<Point, bool> _overNote;
     private Placement _placement;
     private Skin _skin;
     private Rectangle _expandedBounds;
@@ -30,15 +31,18 @@ internal sealed class Board : Form
     public event Action<Guid>? SwitchRequested;
     public event Action? NoteSettingsRequested;
     public event Action? ApplicationSettingsRequested;
+    public event Action<bool>? CollapseChanged;
     public event Action<Placement>? PlacementChanged;
     public event Action? ExplorerRestarted;
     public bool Snap => _placement.Snap;
+    public bool IsCollapsed => _collapsed;
     private bool AutoCollapse => _collapseAtEdge && Snap && _placement.Side != DockSide.None;
 
-    public Board(Placement placement, Skin skin)
+    public Board(Placement placement, Skin skin, Func<Point, bool> overNote)
     {
         _placement = placement;
         _skin = skin;
+        _overNote = overNote;
         Text = T("AppName");
         AutoScaleMode = AutoScaleMode.Dpi;
         FormBorderStyle = FormBorderStyle.None;
@@ -77,10 +81,7 @@ internal sealed class Board : Form
     public void RevealBoard(bool fromTray = false)
     {
         if (_collapsed)
-        {
-            _collapsed = false;
-            ApplyWindowBounds();
-        }
+            SetCollapsed(false);
         ResetPointerTracking();
         if (fromTray)
             _lastPointerInside += 1200;
@@ -111,13 +112,19 @@ internal sealed class Board : Form
             return;
         }
 
-        if (inside)
+        if (inside || _overNote(position))
             _lastPointerInside = now;
         if (now - _lastPointerInside < 350)
             return;
-        _collapsed = true;
         _hoverSince = null;
+        SetCollapsed(true);
+    }
+
+    private void SetCollapsed(bool collapsed)
+    {
+        _collapsed = collapsed;
         ApplyWindowBounds();
+        CollapseChanged?.Invoke(collapsed);
     }
 
     protected override void OnVisibleChanged(EventArgs args)

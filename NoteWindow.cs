@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Timer = System.Windows.Forms.Timer;
 using static DesktopNotesSwitcher.UiText;
 
@@ -5,9 +6,13 @@ namespace DesktopNotesSwitcher;
 
 internal sealed class NoteWindow : Form
 {
+    private const uint RootWindow = 2; // GA_ROOT
     private readonly LocalData _data;
+    private readonly Action<bool> _savePin;
     private readonly TextBox _editor;
     private readonly Button _close;
+    private readonly CheckBox _pin;
+    private readonly ToolTip _pinTip = new();
     private readonly Label _heading = new()
     {
         AutoSize = true,
@@ -21,16 +26,18 @@ internal sealed class NoteWindow : Form
     private bool _loading;
     private bool _dirty;
     private bool _statusError;
+    private bool _updatingPin;
+    private bool _hiddenWithBar;
 
-    public NoteWindow(LocalData data, Skin skin)
+    public NoteWindow(LocalData data, Skin skin, Action<bool> savePin)
     {
         _data = data;
         _skin = skin;
+        _savePin = savePin;
         Text = T("AppName");
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = false;
-        TopMost = true;
         KeyPreview = true;
         AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(320, 235);
@@ -46,11 +53,28 @@ internal sealed class NoteWindow : Form
         _close.FlatAppearance.BorderSize = 0;
         _close.Click += (_, _) => Dismiss();
 
-        var header = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
+        _pin = new CheckBox
+        {
+            Appearance = Appearance.Button,
+            Text = T("PinButton"),
+            AccessibleName = T("PinNote"),
+            TextAlign = ContentAlignment.MiddleCenter,
+            Size = new Size(48, 28),
+            Anchor = AnchorStyles.Right,
+            FlatStyle = FlatStyle.Flat,
+            UseVisualStyleBackColor = false
+        };
+        _pin.FlatAppearance.BorderSize = 0;
+        _pin.CheckedChanged += (_, _) => SavePin();
+        _pinTip.SetToolTip(_pin, T("PinNote"));
+
+        var header = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 3 };
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.Controls.Add(_heading, 0, 0);
-        header.Controls.Add(_close, 1, 0);
+        header.Controls.Add(_pin, 1, 0);
+        header.Controls.Add(_close, 2, 0);
 
         _editor = new TextBox
         {
@@ -97,16 +121,79 @@ internal sealed class NoteWindow : Form
         };
     }
 
+    protected override bool ShowWithoutActivation => true;
+
     public void ApplySkin(Skin skin)
     {
         _skin = skin;
         BackColor = skin.Paper;
         _close.BackColor = skin.Number;
         _close.ForeColor = skin.Ink;
+        ApplyPinColors();
         _heading.ForeColor = skin.Heading;
         _editor.BackColor = skin.Editor;
         _editor.ForeColor = skin.Ink;
         _status.ForeColor = _statusError ? skin.Error : skin.Hint;
+    }
+
+    public void ApplyTopMost(bool pinned)
+    {
+        TopMost = pinned;
+        _updatingPin = true;
+        _pin.Checked = pinned;
+        _updatingPin = false;
+        ApplyPinColors();
+    }
+
+    private void ApplyPinColors()
+    {
+        _pin.BackColor = _pin.Checked ? _skin.Selected : _skin.Number;
+        _pin.ForeColor = _pin.Checked ? _skin.SelectedInk : _skin.Ink;
+        _pin.FlatAppearance.CheckedBackColor = _skin.Selected;
+        _pin.FlatAppearance.MouseOverBackColor = _pin.Checked ? _skin.SelectedHover : _skin.NumberHover;
+        _pin.FlatAppearance.MouseDownBackColor = _pin.FlatAppearance.MouseOverBackColor;
+    }
+
+    private void SavePin()
+    {
+        if (_updatingPin)
+            return;
+        try
+        {
+            _savePin(_pin.Checked);
+        }
+        catch (Exception error) when (LocalData.IsStorageError(error))
+        {
+            ApplyTopMost(TopMost);
+            SetStatus(T("SettingsSaveError"), error: true);
+        }
+    }
+
+    public bool IsPointerOver(Point position) =>
+        Visible && Bounds.Contains(position) && GetAncestor(WindowFromPoint(position), RootWindow) == Handle;
+
+    public void SetBarCollapsed(bool collapse)
+    {
+        if (collapse)
+        {
+            if (Visible && SaveNow())
+            {
+                _hiddenWithBar = true;
+                Hide();
+            }
+        }
+        else if (_hiddenWithBar)
+        {
+            _hiddenWithBar = false;
+            Show();
+        }
+    }
+
+    public void HideForDesktopChange()
+    {
+        _hiddenWithBar = false;
+        SaveNow();
+        Hide();
     }
 
     public void ApplyTextOptions(Preferences preferences)
@@ -161,6 +248,7 @@ internal sealed class NoteWindow : Form
 
     public void Reveal(Form anchor)
     {
+        _hiddenWithBar = false;
         Rectangle work = Screen.FromControl(anchor).WorkingArea;
         int gap = anchor.LogicalToDeviceUnits(8);
         Location = new Point(anchor.Left, anchor.Top);
@@ -178,7 +266,7 @@ internal sealed class NoteWindow : Form
         Location = new Point(Math.Clamp(x, work.Left, Math.Max(work.Left, work.Right - Width)),
             Math.Clamp(y, work.Top, Math.Max(work.Top, work.Bottom - Height)));
         if (!Visible)
-            Show(anchor);
+            Show();
         Activate();
         _editor.Focus();
     }
@@ -205,7 +293,10 @@ internal sealed class NoteWindow : Form
     private void Dismiss()
     {
         if (SaveNow())
+        {
+            _hiddenWithBar = false;
             Hide();
+        }
     }
 
     private void SetStatus(string text, bool error = false)
@@ -228,9 +319,18 @@ internal sealed class NoteWindow : Form
     protected override void Dispose(bool disposing)
     {
         if (disposing)
+        {
             _autosave.Dispose();
+            _pinTip.Dispose();
+        }
         base.Dispose(disposing);
         if (disposing)
             _editorFont?.Dispose();
     }
+
+    [DllImport("user32.dll")]
+    private static extern nint WindowFromPoint(Point point);
+
+    [DllImport("user32.dll")]
+    private static extern nint GetAncestor(nint window, uint flags);
 }

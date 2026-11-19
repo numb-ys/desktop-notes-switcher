@@ -60,4 +60,10 @@
   <data name="FontSizeDescription" xml:space="preserve"><value>调整所有便笺的正文大小。</value></data>
   <data name="WordWrap" xml:space="preserve"><value>自动换行</value></data>
   <data name="WordWrapDescription" xml:space="preserve"><value>长行随便笺宽度折行。</value></data>
+  <data name="NoteCollapseBehavior" xml:space="preserve"><value>悬浮条收起时</value></data>
+  <data name="NoteCollapseDescription" xml:space="preserve"><value>选择便笺是否继续显示。</value></data>
+  <data name="NoteKeepVisible" xml:space="preserve"><value>保持显示</value></data>
+  <data name="NoteFollowBar" xml:space="preserve"><value>跟随收起</value></data>
+  <data name="PinButton" xml:space="preserve"><value>置顶</value></data>
+  <data name="PinNote" xml:space="preserve"><value>将便笺保持在其他窗口上方</value></data>
 </root>

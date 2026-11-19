@@ -24,15 +24,18 @@ internal sealed class SwitcherApplication : ApplicationContext
     {
         _preferences = _data.ReadPreferences();
         Skin skin = Skin.Find(_preferences.SkinId);
-        _board = new Board(_data.ReadPlacement(), skin) { Icon = icon };
-        _board.ApplyEdgeOptions(_preferences);
-        _note = new NoteWindow(_data, skin) { Icon = icon };
+        _note = new NoteWindow(_data, skin, pinned => SavePreferences(_preferences with { NoteTopMost = pinned })) { Icon = icon };
         _note.ApplyTextOptions(_preferences);
+        _note.ApplyTopMost(_preferences.NoteTopMost);
+        _board = new Board(_data.ReadPlacement(), skin,
+            position => _preferences.NoteFollowsBar && _note.IsPointerOver(position)) { Icon = icon };
+        _board.ApplyEdgeOptions(_preferences);
         MainForm = _board;
         _board.NoteRequested += (id, number) => _note.Toggle(_board, id, number);
         _board.SwitchRequested += SwitchTo;
         _board.NoteSettingsRequested += () => ShowSettings(note: true);
         _board.ApplicationSettingsRequested += () => ShowSettings(note: false);
+        _board.CollapseChanged += collapsed => _note.SetBarCollapsed(collapsed && _preferences.NoteFollowsBar);
         _board.PlacementChanged += SavePlacement;
         _board.ExplorerRestarted += ResetConnection;
         _board.FormClosing += (_, args) =>
@@ -115,10 +118,15 @@ internal sealed class SwitcherApplication : ApplicationContext
         _data.WritePreferences(updated);
         Preferences previous = _preferences;
         _preferences = updated;
+        _settings?.SyncPreferences(updated);
         if (updated.CollapseAtEdge != previous.CollapseAtEdge || updated.RevealDelayMs != previous.RevealDelayMs)
             _board.ApplyEdgeOptions(updated);
         if (updated.NoteFontSize != previous.NoteFontSize || updated.WrapNotes != previous.WrapNotes)
             _note.ApplyTextOptions(updated);
+        if (updated.NoteTopMost != previous.NoteTopMost)
+            _note.ApplyTopMost(updated.NoteTopMost);
+        if (updated.NoteFollowsBar != previous.NoteFollowsBar)
+            _note.SetBarCollapsed(_board.IsCollapsed && updated.NoteFollowsBar);
         if (updated.SkinId != previous.SkinId)
         {
             Skin skin = Skin.Find(updated.SkinId);
@@ -131,8 +139,7 @@ internal sealed class SwitcherApplication : ApplicationContext
     {
         if (id == Guid.Empty || id == _snapshot?.CurrentId || _problem is not null)
             return;
-        _note.SaveNow();
-        _note.Hide();
+        _note.HideForDesktopChange();
         try
         {
             _desktops.SwitchTo(id);
@@ -157,8 +164,7 @@ internal sealed class SwitcherApplication : ApplicationContext
 
             if (_snapshot is not null && _snapshot.CurrentId != snapshot.CurrentId)
             {
-                _note.SaveNow();
-                _note.Hide();
+                _note.HideForDesktopChange();
                 _settings?.Close();
             }
 

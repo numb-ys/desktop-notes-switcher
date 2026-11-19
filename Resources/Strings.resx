@@ -60,4 +60,10 @@
   <data name="FontSizeDescription" xml:space="preserve"><value>Change the text size in all notes.</value></data>
   <data name="WordWrap" xml:space="preserve"><value>Word wrap</value></data>
   <data name="WordWrapDescription" xml:space="preserve"><value>Wrap long lines to fit the note.</value></data>
+  <data name="NoteCollapseBehavior" xml:space="preserve"><value>When the bar hides</value></data>
+  <data name="NoteCollapseDescription" xml:space="preserve"><value>Choose whether the note stays visible.</value></data>
+  <data name="NoteKeepVisible" xml:space="preserve"><value>Keep visible</value></data>
+  <data name="NoteFollowBar" xml:space="preserve"><value>Hide with the bar</value></data>
+  <data name="PinButton" xml:space="preserve"><value>Pin</value></data>
+  <data name="PinNote" xml:space="preserve"><value>Keep notes above other windows</value></data>
 </root>
