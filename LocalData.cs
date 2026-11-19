@@ -12,6 +12,8 @@ internal sealed record Placement(string Display, double X, double Y, DockSide Si
 
 internal sealed class LocalData
 {
+    private sealed record Preferences(string SkinId);
+
     private readonly string _root = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DesktopNotesSwitcher");
     private readonly JsonSerializerOptions _json = new()
@@ -40,6 +42,27 @@ internal sealed class LocalData
 
     public void WritePlacement(Placement placement) =>
         Write(Path.Combine(_root, "placement.json"), JsonSerializer.Serialize(placement, _json));
+
+    public Skin ReadSkin()
+    {
+        try
+        {
+            string path = Path.Combine(_root, "preferences.json");
+            if (File.Exists(path))
+            {
+                string? id = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path), _json)?.SkinId;
+                return Skin.Available.FirstOrDefault(skin => skin.Id == id) ?? Skin.Default;
+            }
+        }
+        catch (Exception error) when (IsStorageError(error) || error is JsonException)
+        {
+            // Use the default when a preference from disk cannot be loaded.
+        }
+        return Skin.Default;
+    }
+
+    public void WriteSkin(Skin skin) =>
+        Write(Path.Combine(_root, "preferences.json"), JsonSerializer.Serialize(new Preferences(skin.Id), _json));
 
     public string ReadNote(Guid desktop)
     {

@@ -6,21 +6,24 @@ internal sealed class NoteWindow : Form
 {
     private readonly LocalData _data;
     private readonly TextBox _editor;
+    private readonly Button _close;
     private readonly Label _heading = new()
     {
         AutoSize = true,
-        Anchor = AnchorStyles.Left,
-        ForeColor = Color.FromArgb(64, 53, 28)
+        Anchor = AnchorStyles.Left
     };
     private readonly Label _status = new() { AutoSize = true, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
     private readonly Timer _autosave = new() { Interval = 350 };
+    private Skin _skin;
     private Guid? _desktop;
     private bool _loading;
     private bool _dirty;
+    private bool _statusError;
 
-    public NoteWindow(LocalData data)
+    public NoteWindow(LocalData data, Skin skin)
     {
         _data = data;
+        _skin = skin;
         Text = "桌面便笺";
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
@@ -29,25 +32,23 @@ internal sealed class NoteWindow : Form
         KeyPreview = true;
         AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(320, 235);
-        BackColor = Color.FromArgb(255, 248, 223);
 
-        var close = new Button
+        _close = new Button
         {
             Text = "×",
             AccessibleName = "收起便笺",
             Size = new Size(30, 28),
             Anchor = AnchorStyles.Right,
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(246, 229, 180)
+            FlatStyle = FlatStyle.Flat
         };
-        close.FlatAppearance.BorderSize = 0;
-        close.Click += (_, _) => Dismiss();
+        _close.FlatAppearance.BorderSize = 0;
+        _close.Click += (_, _) => Dismiss();
 
         var header = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2 };
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         header.Controls.Add(_heading, 0, 0);
-        header.Controls.Add(close, 1, 0);
+        header.Controls.Add(_close, 1, 0);
 
         _editor = new TextBox
         {
@@ -56,8 +57,6 @@ internal sealed class NoteWindow : Form
             AcceptsReturn = true,
             ScrollBars = ScrollBars.Vertical,
             BorderStyle = BorderStyle.FixedSingle,
-            BackColor = Color.FromArgb(255, 253, 241),
-            ForeColor = Color.FromArgb(38, 47, 54),
             AccessibleName = "便笺内容"
         };
         _editor.TextChanged += (_, _) =>
@@ -78,6 +77,7 @@ internal sealed class NoteWindow : Form
         layout.Controls.Add(_editor, 0, 1);
         layout.Controls.Add(_status, 0, 2);
         Controls.Add(layout);
+        ApplySkin(skin);
 
         _autosave.Tick += (_, _) => SaveNow();
         KeyDown += (_, args) =>
@@ -93,6 +93,18 @@ internal sealed class NoteWindow : Form
                 args.SuppressKeyPress = true;
             }
         };
+    }
+
+    public void ApplySkin(Skin skin)
+    {
+        _skin = skin;
+        BackColor = skin.Paper;
+        _close.BackColor = skin.Number;
+        _close.ForeColor = skin.Ink;
+        _heading.ForeColor = skin.Heading;
+        _editor.BackColor = skin.Editor;
+        _editor.ForeColor = skin.Ink;
+        _status.ForeColor = _statusError ? skin.Error : skin.Hint;
     }
 
     public void Toggle(Form anchor, Guid desktop, int number)
@@ -183,8 +195,9 @@ internal sealed class NoteWindow : Form
 
     private void SetStatus(string text, bool error = false)
     {
+        _statusError = error;
         _status.Text = text;
-        _status.ForeColor = error ? Color.FromArgb(141, 38, 24) : Color.FromArgb(101, 89, 60);
+        _status.ForeColor = error ? _skin.Error : _skin.Hint;
     }
 
     protected override void OnFormClosing(FormClosingEventArgs args)

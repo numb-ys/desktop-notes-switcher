@@ -13,14 +13,17 @@ internal sealed class SwitcherApplication : ApplicationContext
     private readonly ContextMenuStrip _menu = new();
     private readonly ToolStripMenuItem _status = new() { Enabled = false };
     private readonly Timer _refresh = new() { Interval = 650 };
+    private Skin _skin;
+    private SettingsWindow? _settings;
     private DesktopSnapshot? _snapshot;
     private nint _pinnedWindow;
     private string? _problem;
 
     public SwitcherApplication(Icon icon)
     {
-        _board = new Board(_data.ReadPlacement()) { Icon = icon };
-        _note = new NoteWindow(_data) { Icon = icon };
+        _skin = _data.ReadSkin();
+        _board = new Board(_data.ReadPlacement(), _skin) { Icon = icon };
+        _note = new NoteWindow(_data, _skin) { Icon = icon };
         MainForm = _board;
         _board.NoteRequested += (id, number) => _note.Toggle(_board, id, number);
         _board.SwitchRequested += SwitchTo;
@@ -41,6 +44,7 @@ internal sealed class SwitcherApplication : ApplicationContext
         var snap = new ToolStripMenuItem("自动吸附屏幕边缘") { CheckOnClick = true };
         snap.Click += (_, _) => _board.SetSnap(snap.Checked);
         _menu.Items.Add(snap);
+        _menu.Items.Add("设置…", null, (_, _) => ShowSettings());
         _menu.Items.Add(new ToolStripSeparator());
         _menu.Items.Add(_status);
         _menu.Items.Add("退出", null, (_, _) => _board.Close());
@@ -76,6 +80,24 @@ internal sealed class SwitcherApplication : ApplicationContext
         RefreshDesktops();
     }
 
+    private void ShowSettings()
+    {
+        if (_settings is null)
+        {
+            _settings = new SettingsWindow(_data, _skin, ApplySkin) { Icon = _board.Icon };
+            _settings.FormClosed += (_, _) => _settings = null;
+            _settings.Show();
+        }
+        _settings.Activate();
+    }
+
+    private void ApplySkin(Skin skin)
+    {
+        _skin = skin;
+        _board.ApplySkin(skin);
+        _note.ApplySkin(skin);
+    }
+
     private void SwitchTo(Guid id)
     {
         if (id == Guid.Empty || id == _snapshot?.CurrentId || _problem is not null)
@@ -108,6 +130,7 @@ internal sealed class SwitcherApplication : ApplicationContext
             {
                 _note.SaveNow();
                 _note.Hide();
+                _settings?.Close();
             }
 
             _snapshot = snapshot;
@@ -151,6 +174,7 @@ internal sealed class SwitcherApplication : ApplicationContext
         {
             _refresh.Dispose();
             _tray.Dispose();
+            _settings?.Dispose();
             _note.Dispose();
             _board.Dispose();
             _menu.Dispose();

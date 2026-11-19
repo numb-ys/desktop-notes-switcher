@@ -6,14 +6,13 @@ namespace DesktopNotesSwitcher;
 
 internal sealed class Board : Form
 {
-    private static readonly Color Paper = Color.FromArgb(255, 248, 223);
-    private static readonly Color Ink = Color.FromArgb(38, 47, 54);
     private readonly ToolTip _tips = new();
-    private readonly Control _grip = new Grip { Cursor = Cursors.SizeAll, AccessibleName = "便笺悬浮条" };
+    private readonly Grip _grip = new() { Cursor = Cursors.SizeAll, AccessibleName = "便笺悬浮条" };
     private readonly FlowLayoutPanel _numbers = new() { WrapContents = false, AutoScroll = true };
     private readonly Dictionary<Guid, NumberButton> _buttons = new();
     private readonly uint _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
     private Placement _placement;
+    private Skin _skin;
     private Point? _dragOrigin;
     private Point _windowOrigin;
     private bool _dragging;
@@ -25,18 +24,19 @@ internal sealed class Board : Form
     public bool Snap => _placement.Snap;
     public void SetGripMenu(ContextMenuStrip menu) => _grip.ContextMenuStrip = menu;
 
-    public Board(Placement placement)
+    public Board(Placement placement, Skin skin)
     {
         _placement = placement;
+        _skin = skin;
         Text = "桌面便笺";
         AutoScaleMode = AutoScaleMode.Dpi;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
-        BackColor = Paper;
         Controls.Add(_numbers);
         Controls.Add(_grip);
+        ApplySkin(skin);
         _tips.SetToolTip(_grip, "拖动移动 · 右键打开菜单");
         _grip.MouseDown += StartDrag;
         _grip.MouseMove += Drag;
@@ -51,6 +51,16 @@ internal sealed class Board : Form
     }
 
     protected override bool ShowWithoutActivation => true;
+
+    public void ApplySkin(Skin skin)
+    {
+        _skin = skin;
+        BackColor = skin.Paper;
+        _grip.SetSkin(skin);
+        foreach (NumberButton button in _buttons.Values)
+            button.SetSkin(skin);
+        Invalidate();
+    }
 
     public void SetDesktops(Guid[] desktops, Guid current)
     {
@@ -76,12 +86,11 @@ internal sealed class Board : Form
     {
         string label = number == 0 ? "便笺" : number.ToString();
         string tooltip = number == 0 ? "打开便笺" : $"桌面 {number} · 左键便笺，右键切换";
-        var button = new NumberButton
+        var button = new NumberButton(_skin)
         {
             Text = label,
             AccessibleName = number == 0 ? label : $"桌面 {number} 便笺",
             AccessibleDescription = tooltip,
-            ForeColor = Ink,
             TabStop = false,
             Cursor = Cursors.Hand
         };
@@ -275,7 +284,7 @@ internal sealed class Board : Form
     {
         base.OnPaint(args);
         args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        using var outline = new Pen(Color.FromArgb(221, 208, 169), Scale(1));
+        using var outline = new Pen(_skin.Outline, Scale(1));
         using GraphicsPath shape = Rounded(new Rectangle(1, 1, Width - 2, Height - 2), Scale(16));
         args.Graphics.DrawPath(outline, shape);
     }
@@ -302,13 +311,21 @@ internal sealed class Board : Form
 
     private sealed class Grip : Control
     {
+        private Skin _skin = Skin.Default;
+
+        public void SetSkin(Skin skin)
+        {
+            _skin = skin;
+            Invalidate();
+        }
+
         protected override void OnPaint(PaintEventArgs args)
         {
             var box = new Rectangle((Width - LogicalToDeviceUnits(14)) / 2,
                 (Height - LogicalToDeviceUnits(16)) / 2, LogicalToDeviceUnits(14), LogicalToDeviceUnits(16));
             args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using var fill = new SolidBrush(Color.FromArgb(250, 210, 103));
-            using var outline = new Pen(Color.FromArgb(135, 103, 32), LogicalToDeviceUnits(1));
+            using var fill = new SolidBrush(_skin.Grip);
+            using var outline = new Pen(_skin.GripInk, LogicalToDeviceUnits(1));
             using GraphicsPath shape = Rounded(box, LogicalToDeviceUnits(4));
             args.Graphics.FillPath(fill, shape);
             args.Graphics.DrawPath(outline, shape);
@@ -318,10 +335,17 @@ internal sealed class Board : Form
         }
     }
 
-    private sealed class NumberButton : Button
+    private sealed class NumberButton(Skin skin) : Button
     {
+        private Skin _skin = skin;
         private bool _current;
         private bool _hovered;
+
+        public void SetSkin(Skin updated)
+        {
+            _skin = updated;
+            Invalidate();
+        }
 
         public void SetCurrent(bool current)
         {
@@ -345,15 +369,15 @@ internal sealed class Board : Form
 
         protected override void OnPaint(PaintEventArgs args)
         {
-            args.Graphics.Clear(Paper);
+            args.Graphics.Clear(_skin.Paper);
             args.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            Color fillColor = _current ? Color.FromArgb(44, 64, 75) : Color.FromArgb(246, 229, 180);
+            Color fillColor = _current ? _skin.Selected : _skin.Number;
             if (_hovered)
-                fillColor = _current ? Color.FromArgb(64, 88, 103) : Color.FromArgb(248, 217, 137);
+                fillColor = _current ? _skin.SelectedHover : _skin.NumberHover;
             using var fill = new SolidBrush(fillColor);
             using GraphicsPath shape = Rounded(new Rectangle(0, 0, Width - 1, Height - 1), LogicalToDeviceUnits(12));
             args.Graphics.FillPath(fill, shape);
-            TextRenderer.DrawText(args.Graphics, Text, Font, ClientRectangle, _current ? Color.White : ForeColor,
+            TextRenderer.DrawText(args.Graphics, Text, Font, ClientRectangle, _current ? _skin.SelectedInk : _skin.Ink,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
         }
     }
